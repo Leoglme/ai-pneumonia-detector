@@ -16,25 +16,27 @@ train_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255
 validation_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
 test_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
 
+batch_size=50
+
 # Générateur de données pour l'ensemble d'entraînement
 train_generator = train_datagen.flow_from_directory(
     train_dir,  # Répertoire de données d'entraînement
     target_size=(128, 128),  # Redimensionner les images à 128x128 pixels
-    batch_size=20,  # Nombre d'images à traiter par lot
+    batch_size=batch_size,  # Nombre d'images à traiter par lot
     class_mode='binary')  # Les étiquettes sont binaires (NORMAL ou PNEUMONIA)
 
 # Générateur de données pour l'ensemble de validation
 validation_generator = validation_datagen.flow_from_directory(
     validation_dir,  # Répertoire de données de validation
     target_size=(128, 128),  # Redimensionner les images à 128x128 pixels
-    batch_size=20,  # Nombre d'images à traiter par lot
+    batch_size=batch_size,  # Nombre d'images à traiter par lot
     class_mode='binary')  # Les étiquettes sont binaires (NORMAL ou PNEUMONIA)
 
 # Générateur de données pour l'ensemble de test
 test_generator = test_datagen.flow_from_directory(
     test_dir,  # Répertoire de données de test
     target_size=(128, 128),  # Redimensionner les images à 128x128 pixels
-    batch_size=20,  # Nombre d'images à traiter par lot
+    batch_size=batch_size,  # Nombre d'images à traiter par lot
     class_mode='binary')  # Les étiquettes sont binaires (NORMAL ou PNEUMONIA)
 
 # Définition du modèle CNN (réseau de neurones convolutif)
@@ -64,7 +66,6 @@ history = model.fit(
     steps_per_epoch=10,  # Nombre d'étapes par époque
     epochs=5,  # Nombre d'époques (périodes d'entraînement)
     validation_data=validation_generator,  # Générateur de données de validation
-    workers=4,  # Nombre de processus de travail (workers) à utiliser
     validation_steps=50  # Nombre d'étapes de validation par époque
 )
 
