@@ -1,6 +1,8 @@
 import os
+
 # Disable oneDNN optimizations
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress TensorFlow warnings
 
 import tensorflow as tf
 
@@ -49,6 +51,33 @@ class DataHandler:
             class_mode='binary'
         )
 
+    def get_train_dataset(self):
+        return tf.data.Dataset.from_generator(
+            lambda: self.train_generator,
+            output_signature=(
+                tf.TensorSpec(shape=(None, *self.img_size, 3), dtype=tf.float32),
+                tf.TensorSpec(shape=(None,), dtype=tf.float32)
+            )
+        ).repeat()
+
+    def get_validation_dataset(self):
+        return tf.data.Dataset.from_generator(
+            lambda: self.validation_generator,
+            output_signature=(
+                tf.TensorSpec(shape=(None, *self.img_size, 3), dtype=tf.float32),
+                tf.TensorSpec(shape=(None,), dtype=tf.float32)
+            )
+        ).repeat()
+
+    def get_test_dataset(self):
+        return tf.data.Dataset.from_generator(
+            lambda: self.test_generator,
+            output_signature=(
+                tf.TensorSpec(shape=(None, *self.img_size, 3), dtype=tf.float32),
+                tf.TensorSpec(shape=(None,), dtype=tf.float32)
+            )
+        )
+
 
 class PneumoniaDetector:
     """
@@ -78,24 +107,24 @@ class PneumoniaDetector:
         model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
         return model
 
-    def train(self, train_gen, val_gen, epochs=5, train_steps=10, val_steps=50):
+    def train(self, train_ds, val_ds, epochs=5, train_steps=10, val_steps=50):
         """
         Train the model using the training and validation data generators.
         """
         history = self.model.fit(
-            train_gen,
+            train_ds,
             steps_per_epoch=train_steps,
             epochs=epochs,
-            validation_data=val_gen,
+            validation_data=val_ds,
             validation_steps=val_steps
         )
         return history
 
-    def evaluate(self, test_gen, steps):
+    def evaluate(self, test_ds, test_steps):
         """
         Evaluate the model using the test data generator.
         """
-        loss, accuracy = self.model.evaluate(test_gen, steps=steps)
+        loss, accuracy = self.model.evaluate(test_ds, steps=test_steps)
         return loss, accuracy
 
 
@@ -114,9 +143,14 @@ if __name__ == "__main__":
     # Initialize the model
     detector = PneumoniaDetector(input_shape=(image_size[0], image_size[1], 3))
 
+    # Get datasets
+    train_ds = data_handler.get_train_dataset()
+    val_ds = data_handler.get_validation_dataset()
+    test_ds = data_handler.get_test_dataset()
+
     # Train the model
-    detector.train(data_handler.train_generator, data_handler.validation_generator, num_epochs, steps_per_epoch, validation_steps)
+    detector.train(train_ds, val_ds, num_epochs, steps_per_epoch, validation_steps)
 
     # Evaluate the model
-    test_loss, test_acc = detector.evaluate(data_handler.test_generator, test_steps)
+    test_loss, test_acc = detector.evaluate(test_ds, test_steps)
     print(f'Test accuracy: {test_acc * 100:.2f}%')

@@ -5,3 +5,7 @@ remove all packages in machine: pip freeze > requirements.txt && pip uninstall -
 pip install -r requirements.txt
 
 pip list
+
+
+## Install tensorflow in CPU or GPU
+https://www.tensorflow.org/install/pip?hl=fr#windows-wsl2
