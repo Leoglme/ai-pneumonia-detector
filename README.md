@@ -32,3 +32,13 @@
     remove all packages in machine: pip freeze > requirements.txt && pip uninstall -y -r requirements.txt && rm requirements.txt
     pip list
     ```
+
+## Production
+### ⚙️➡️ Automatic Distribution Process (CI / CD)
+#### Si c'est un nouveau projet suivez les instructions : 
+1. Ajoutées les SECRETS_GITHUB pour :
+   - O2SWITCH_FTP_HOST
+   - O2SWITCH_FTP_PASSWORD
+   - O2SWITCH_FTP_PORT
+   - O2SWITCH_FTP_USERNAME
+   - PAT (crée un nouveau token si besoin sur le site de github puis dans le menu du "Profil" puis -> "Settings" -> "Developper Settings' -> 'Personnal Access Tokens' -> Tokens (classic))
