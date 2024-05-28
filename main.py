@@ -1,74 +1,122 @@
 import os
-
-# Désactiver les optimisations de oneDNN
+# Disable oneDNN optimizations
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Masquer les warnings de TensorFlow
+
 import tensorflow as tf
 
-# Définir les chemins vers les répertoires de données
-base_dir = 'datasets/chest_Xray'
-train_dir = os.path.join(base_dir, 'train')
-validation_dir = os.path.join(base_dir, 'val')
-test_dir = os.path.join(base_dir, 'test')
 
-# Création des générateurs de données pour normaliser les images (les valeurs des pixels seront entre 0 et 1)
-train_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
-validation_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
-test_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
+class DataHandler:
+    """
+    This class handles the creation of data generators for training, validation, and testing datasets.
+    """
 
-batch_size=50
+    def __init__(self, data_dir, img_size=(235, 235), batch_sz=50):
+        self.data_dir = data_dir
+        self.img_size = img_size
+        self.batch_sz = batch_sz
+        self.train_dir = os.path.join(data_dir, 'train')
+        self.validation_dir = os.path.join(data_dir, 'val')
+        self.test_dir = os.path.join(data_dir, 'test')
+        self.train_generator = None
+        self.validation_generator = None
+        self.test_generator = None
+        self._create_generators()
 
-# Générateur de données pour l'ensemble d'entraînement
-train_generator = train_datagen.flow_from_directory(
-    train_dir,  # Répertoire de données d'entraînement
-    target_size=(128, 128),  # Redimensionner les images à 128x128 pixels
-    batch_size=batch_size,  # Nombre d'images à traiter par lot
-    class_mode='binary')  # Les étiquettes sont binaires (NORMAL ou PNEUMONIA)
+    def _create_generators(self):
+        """
+        Create data generators for training, validation, and testing datasets.
+        """
+        datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
 
-# Générateur de données pour l'ensemble de validation
-validation_generator = validation_datagen.flow_from_directory(
-    validation_dir,  # Répertoire de données de validation
-    target_size=(128, 128),  # Redimensionner les images à 128x128 pixels
-    batch_size=batch_size,  # Nombre d'images à traiter par lot
-    class_mode='binary')  # Les étiquettes sont binaires (NORMAL ou PNEUMONIA)
+        self.train_generator = datagen.flow_from_directory(
+            self.train_dir,
+            target_size=self.img_size,
+            batch_size=self.batch_sz,
+            class_mode='binary'
+        )
 
-# Générateur de données pour l'ensemble de test
-test_generator = test_datagen.flow_from_directory(
-    test_dir,  # Répertoire de données de test
-    target_size=(128, 128),  # Redimensionner les images à 128x128 pixels
-    batch_size=batch_size,  # Nombre d'images à traiter par lot
-    class_mode='binary')  # Les étiquettes sont binaires (NORMAL ou PNEUMONIA)
+        self.validation_generator = datagen.flow_from_directory(
+            self.validation_dir,
+            target_size=self.img_size,
+            batch_size=self.batch_sz,
+            class_mode='binary'
+        )
 
-# Définition du modèle CNN (réseau de neurones convolutif)
-model = tf.keras.models.Sequential([
-    tf.keras.layers.Input(shape=(128, 128, 3)),  # Couche d'entrée
-    tf.keras.layers.Conv2D(32, (3, 3), activation='relu'),
-    # Couche de convolution avec 32 filtres, taille de filtre 3x3, et fonction d'activation ReLU
-    tf.keras.layers.MaxPooling2D((2, 2)),  # Couche de pooling avec une fenêtre de 2x2
-    tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),  # Deuxième couche de convolution avec 64 filtres
-    tf.keras.layers.MaxPooling2D((2, 2)),  # Deuxième couche de pooling
-    tf.keras.layers.Conv2D(128, (3, 3), activation='relu'),  # Troisième couche de convolution avec 128 filtres
-    tf.keras.layers.MaxPooling2D((2, 2)),  # Troisième couche de pooling
-    tf.keras.layers.Flatten(),  # Aplatir la sortie 3D en une seule dimension pour la couche dense
-    tf.keras.layers.Dense(512, activation='relu'),  # Couche dense avec 512 neurones et activation ReLU
-    tf.keras.layers.Dense(1, activation='sigmoid')
-    # Couche de sortie avec un neurone et activation sigmoïde pour la classification binaire
-])
+        self.test_generator = datagen.flow_from_directory(
+            self.test_dir,
+            target_size=self.img_size,
+            batch_size=self.batch_sz,
+            class_mode='binary'
+        )
 
-# Compilation du modèle avec l'optimiseur Adam et la fonction de perte binaire cross-entropie
-model.compile(optimizer='adam',
-              loss='binary_crossentropy',
-              metrics=['accuracy'])
 
-# Entraînement du modèle
-history = model.fit(
-    train_generator,  # Générateur de données d'entraînement
-    steps_per_epoch=10,  # Nombre d'étapes par époque
-    epochs=5,  # Nombre d'époques (périodes d'entraînement)
-    validation_data=validation_generator,  # Générateur de données de validation
-    validation_steps=50  # Nombre d'étapes de validation par époque
-)
+class PneumoniaDetector:
+    """
+    This class defines the CNN model for pneumonia detection and provides methods for training and evaluation.
+    """
 
-# Évaluation du modèle sur l'ensemble de test
-test_loss, test_acc = model.evaluate(test_generator, steps=50)  # Évaluer le modèle sur 50 étapes de test
-print(f'Test accuracy: {test_acc * 100:.2f}%')  # Afficher la précision du modèle sur l'ensemble de test
+    def __init__(self, input_shape):
+        self.model = self._build_model(input_shape)
+
+    @staticmethod
+    def _build_model(input_shape):
+        """
+        Build the CNN model.
+        """
+        model = tf.keras.models.Sequential([
+            tf.keras.layers.Input(shape=input_shape),
+            tf.keras.layers.Conv2D(32, (3, 3), activation='relu'),
+            tf.keras.layers.MaxPooling2D((2, 2)),
+            tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
+            tf.keras.layers.MaxPooling2D((2, 2)),
+            tf.keras.layers.Conv2D(128, (3, 3), activation='relu'),
+            tf.keras.layers.MaxPooling2D((2, 2)),
+            tf.keras.layers.Flatten(),
+            tf.keras.layers.Dense(512, activation='relu'),
+            tf.keras.layers.Dense(1, activation='sigmoid')
+        ])
+        model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+        return model
+
+    def train(self, train_gen, val_gen, epochs=5, train_steps=10, val_steps=50):
+        """
+        Train the model using the training and validation data generators.
+        """
+        history = self.model.fit(
+            train_gen,
+            steps_per_epoch=train_steps,
+            epochs=epochs,
+            validation_data=val_gen,
+            validation_steps=val_steps
+        )
+        return history
+
+    def evaluate(self, test_gen, steps):
+        """
+        Evaluate the model using the test data generator.
+        """
+        loss, accuracy = self.model.evaluate(test_gen, steps=steps)
+        return loss, accuracy
+
+
+if __name__ == "__main__":
+    data_directory = 'datasets/chest_Xray'
+    image_size = (128, 128)
+    batch_size = 50
+    num_epochs = 5
+    steps_per_epoch = 10
+    validation_steps = 50
+    test_steps = 50
+
+    # Initialize data handlers
+    data_handler = DataHandler(data_directory, image_size, batch_size)
+
+    # Initialize the model
+    detector = PneumoniaDetector(input_shape=(image_size[0], image_size[1], 3))
+
+    # Train the model
+    detector.train(data_handler.train_generator, data_handler.validation_generator, num_epochs, steps_per_epoch, validation_steps)
+
+    # Evaluate the model
+    test_loss, test_acc = detector.evaluate(data_handler.test_generator, test_steps)
+    print(f'Test accuracy: {test_acc * 100:.2f}%')
