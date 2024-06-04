@@ -43,7 +43,7 @@
 ### Clonage du Dépôt
 Clonez le dépôt :
 ```bash
-git git@github.com:Leoglme/ai-pneumonia-detector.git
+git clone git@github.com:Leoglme/ai-pneumonia-detector.git
 cd ai-pneumonia-detector
 ```
 
