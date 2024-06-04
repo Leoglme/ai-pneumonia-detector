@@ -52,6 +52,7 @@ cd ai-pneumonia-detector
 ### Configuration du Token d'Accès pour les fichiers LFS
 Configurez le token d'accès LFS avec votre jeton personnel, pour pouvoir fetch les fichiers LFS :
 ```bash
+cd ai-pneumonia-detector
 git config lfs.https://gitea.crzcommon.com/crzgames/ai-pneumonia-detector.git/info/lfs.access token dd39e40af8323acc9aa3ee4fb6cee08fc75d497b
 ```
 
