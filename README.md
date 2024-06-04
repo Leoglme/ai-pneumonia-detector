@@ -55,6 +55,8 @@ Configurez le token d'accès LFS avec votre jeton personnel, pour pouvoir fetch 
 git config lfs.https://gitea.crzcommon.com/crzgames/ai-pneumonia-detector.git/info/lfs.access token dd39e40af8323acc9aa3ee4fb6cee08fc75d497b
 ```
 
+<br />
+
 ### Identification lors du clone du projet pour s'identifier au près de gitea.crzcommon.com
 ```bash
 Username: crzgames
