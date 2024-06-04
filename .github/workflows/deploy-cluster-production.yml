@@ -1,0 +1,58 @@
+name: deploy_cluster_production
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+
+jobs:
+  deploy_cluster:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get latest release tag
+        id: previoustag
+        uses: WyriHaximus/github-action-get-previous-tag@v1
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Build and push Docker image - Production version latest
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/production/Dockerfile
+          push: true
+          tags: corentin35/seatyrants-website-frontend:latest
+
+      - name: Build and push Docker image - Production version x.x.x
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/production/Dockerfile
+          push: true
+          tags: corentin35/seatyrants-website-frontend:${{ steps.previoustag.outputs.tag }}
+
+      - name: Replace image tag in deployment.yaml for Kubernetes
+        run: |
+          sed -i 's/\${TAG_VERSION}/'${{ steps.previoustag.outputs.tag }}'/g' k8s/production/deployment.yaml
+
+      - name: Connect to the cluster K3S for deploy
+        uses: actions-hub/kubectl@master
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBECONFIG }}
+        with:
+          args: |
+            apply -f k8s/production/namespace.yaml
+            -f k8s/production/certificate.yaml
+            -f k8s/production/docker-registry-secret.yaml
+            -f k8s/production/deployment.yaml
+            -f k8s/production/hpa.yaml
+            -f k8s/production/ingress.yaml
+            -f k8s/production/service.yaml
