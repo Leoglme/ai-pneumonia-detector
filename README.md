@@ -43,7 +43,7 @@
 ### Clonage du Dépôt
 Clonez le dépôt :
 ```bash
-git git@github.com:Leoglme/ai-pneumonia-detector.git
+git clone git@github.com:Leoglme/ai-pneumonia-detector.git
 cd ai-pneumonia-detector
 ```
 
@@ -53,6 +53,14 @@ cd ai-pneumonia-detector
 Configurez le token d'accès LFS avec votre jeton personnel, pour pouvoir fetch les fichiers LFS :
 ```bash
 git config lfs.https://gitea.crzcommon.com/crzgames/ai-pneumonia-detector.git/info/lfs.access token dd39e40af8323acc9aa3ee4fb6cee08fc75d497b
+```
+
+<br />
+
+### Identification lors du clone du projet pour s'identifier au près de gitea.crzcommon.com
+```bash
+Username: crzgames
+Password: Marylene59!!!!
 ```
 
 <br />
