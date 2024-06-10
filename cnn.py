@@ -105,7 +105,7 @@ class PneumoniaDetector:
 
 
 if __name__ == "__main__":
-    data_directory = 'datasets/chest_Xray'
+    data_directory = 'datasets'
     image_size = (256, 256)
     batch_size = 32
     num_epochs = 10
