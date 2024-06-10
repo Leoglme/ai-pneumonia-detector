@@ -19,6 +19,7 @@ class DataHandler:
         self.train_dir = os.path.join(data_dir, 'train')
         self.validation_dir = os.path.join(data_dir, 'val')
         self.train_generator = None
+        self.validation_generator = None
         self._create_generators()
 
     def _create_generators(self):
@@ -35,9 +36,16 @@ class DataHandler:
             class_mode='binary'
         )
 
-    def get_train_dataset(self):
+        self.validation_generator = datagen.flow_from_directory(
+            self.validation_dir,
+            target_size=self.img_size,
+            batch_size=self.batch_sz,
+            class_mode='binary'
+        )
+
+    def get_dataset(self, generator):
         return tf.data.Dataset.from_generator(
-            lambda: self.train_generator,
+            lambda: generator,
             output_signature=(
                 tf.TensorSpec(shape=(None, *self.img_size, 3), dtype=tf.float32),
                 tf.TensorSpec(shape=(None,), dtype=tf.float32)
@@ -77,7 +85,7 @@ class PneumoniaDetector:
                       metrics=['accuracy'])
         return model
 
-    def train(self, train_ds, val_ds, epochs=10, train_steps=100, val_steps=50):
+    def train(self, train_ds, epochs=10, train_steps=100, val_steps=50):
         """
         Train the model using the training and validation data generators.
         """
@@ -85,7 +93,7 @@ class PneumoniaDetector:
             train_ds,
             steps_per_epoch=train_steps,
             epochs=epochs,
-            validation_data=val_ds,
+            validation_data=train_ds,
             validation_steps=val_steps
         )
         return history
@@ -120,14 +128,17 @@ if __name__ == "__main__":
     detector = PneumoniaDetector(input_shape=(image_size[0], image_size[1], 3))
 
     # Get datasets
-    train_ds = data_handler.get_train_dataset()
+    train_ds = data_handler.get_dataset(data_handler.train_generator)
+    val_ds = data_handler.get_dataset(data_handler.validation_generator)
 
     # Train the model
-    history = detector.train(train_ds, train_ds, num_epochs, steps_per_epoch, validation_steps)
+    history = detector.train(train_ds, num_epochs, steps_per_epoch, validation_steps)
 
     # Evaluate the model
-    test_loss, test_acc = detector.evaluate(train_ds, test_steps)
-    print(f'Test accuracy: {test_acc * 100:.2f}%')
+    nb_eval = 2
+    for i in range(nb_eval):
+        test_loss, test_acc = detector.evaluate(val_ds, test_steps)
+        print(f'Test accuracy: {test_acc * 100:.2f}%')
 
     # Print additional metrics
     print("Training and validation history:")
