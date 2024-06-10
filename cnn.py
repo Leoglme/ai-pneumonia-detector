@@ -18,34 +18,18 @@ class DataHandler:
         self.batch_sz = batch_sz
         self.train_dir = os.path.join(data_dir, 'train')
         self.validation_dir = os.path.join(data_dir, 'val')
-        self.test_dir = os.path.join(data_dir, 'test')
         self.train_generator = None
-        self.validation_generator = None
-        self.test_generator = None
         self._create_generators()
 
     def _create_generators(self):
         """
         Create data generators for training, validation, and testing datasets.
         """
+
         datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
 
         self.train_generator = datagen.flow_from_directory(
             self.train_dir,
-            target_size=self.img_size,
-            batch_size=self.batch_sz,
-            class_mode='binary'
-        )
-
-        self.validation_generator = datagen.flow_from_directory(
-            self.validation_dir,
-            target_size=self.img_size,
-            batch_size=self.batch_sz,
-            class_mode='binary'
-        )
-
-        self.test_generator = datagen.flow_from_directory(
-            self.test_dir,
             target_size=self.img_size,
             batch_size=self.batch_sz,
             class_mode='binary'
@@ -59,24 +43,6 @@ class DataHandler:
                 tf.TensorSpec(shape=(None,), dtype=tf.float32)
             )
         ).repeat()
-
-    def get_validation_dataset(self):
-        return tf.data.Dataset.from_generator(
-            lambda: self.validation_generator,
-            output_signature=(
-                tf.TensorSpec(shape=(None, *self.img_size, 3), dtype=tf.float32),
-                tf.TensorSpec(shape=(None,), dtype=tf.float32)
-            )
-        ).repeat()
-
-    def get_test_dataset(self):
-        return tf.data.Dataset.from_generator(
-            lambda: self.test_generator,
-            output_signature=(
-                tf.TensorSpec(shape=(None, *self.img_size, 3), dtype=tf.float32),
-                tf.TensorSpec(shape=(None,), dtype=tf.float32)
-            )
-        )
 
 
 class PneumoniaDetector:
@@ -100,14 +66,18 @@ class PneumoniaDetector:
             tf.keras.layers.MaxPooling2D((2, 2)),
             tf.keras.layers.Conv2D(128, (3, 3), activation='relu'),
             tf.keras.layers.MaxPooling2D((2, 2)),
+            tf.keras.layers.Conv2D(256, (3, 3), activation='relu'),
+            tf.keras.layers.MaxPooling2D((2, 2)),
             tf.keras.layers.Flatten(),
             tf.keras.layers.Dense(512, activation='relu'),
+            tf.keras.layers.Dropout(0.5),
             tf.keras.layers.Dense(1, activation='sigmoid')
         ])
-        model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+        model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), loss='binary_crossentropy',
+                      metrics=['accuracy'])
         return model
 
-    def train(self, train_ds, val_ds, epochs=5, train_steps=10, val_steps=50):
+    def train(self, train_ds, val_ds, epochs=10, train_steps=100, val_steps=50):
         """
         Train the model using the training and validation data generators.
         """
@@ -127,13 +97,19 @@ class PneumoniaDetector:
         loss, accuracy = self.model.evaluate(test_ds, steps=test_steps)
         return loss, accuracy
 
+    def load_model(self, model_path):
+        """
+        Load the model from the specified path.
+        """
+        self.model = tf.keras.models.load_model(model_path)
+
 
 if __name__ == "__main__":
     data_directory = 'datasets/chest_Xray'
-    image_size = (128, 128)
-    batch_size = 50
-    num_epochs = 5
-    steps_per_epoch = 10
+    image_size = (256, 256)
+    batch_size = 32
+    num_epochs = 10
+    steps_per_epoch = 50
     validation_steps = 50
     test_steps = 50
 
@@ -145,12 +121,15 @@ if __name__ == "__main__":
 
     # Get datasets
     train_ds = data_handler.get_train_dataset()
-    val_ds = data_handler.get_validation_dataset()
-    test_ds = data_handler.get_test_dataset()
 
     # Train the model
-    detector.train(train_ds, val_ds, num_epochs, steps_per_epoch, validation_steps)
+    history = detector.train(train_ds, train_ds, num_epochs, steps_per_epoch, validation_steps)
 
     # Evaluate the model
-    test_loss, test_acc = detector.evaluate(test_ds, test_steps)
+    test_loss, test_acc = detector.evaluate(train_ds, test_steps)
     print(f'Test accuracy: {test_acc * 100:.2f}%')
+
+    # Print additional metrics
+    print("Training and validation history:")
+    for key in history.history:
+        print(f"{key}: {history.history[key]}")
