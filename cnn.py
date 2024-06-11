@@ -1,6 +1,6 @@
 import os
-from PIL import Image
 import pandas as pd
+from utils.image_utils import ImageUtils
 
 # Disable oneDNN optimizations
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
@@ -22,68 +22,14 @@ class DataHandler:
         self.validation_dir = os.path.join(data_dir, 'val')
         self.train_generator = None
         self.validation_generator = None
-        self.image_stats = {
-            'total_images': 0,
-            'min_size': (float('inf'), float('inf')),
-            'max_size': (0, 0),
-            'avg_width': 0,
-            'avg_height': 0,
-            'filtered_images': 0
-        }
-        self.filepaths = []
-        self._filter_images()
+        self.file_paths, self.image_stats = ImageUtils.filter_images(data_dir, img_size)
         self._create_generators()
-
-    def _filter_images(self):
-        """
-        Filter out images that are too small and gather statistics on the image sizes.
-        """
-        total_width, total_height = 0, 0
-        min_img_size = (self.img_size[0] * 2, self.img_size[1] * 2)
-
-        for dirpath, _, filenames in os.walk(self.data_dir):
-            for filename in filenames:
-                if filename.lower().endswith(('png', 'jpg', 'jpeg')):
-                    filepath = os.path.join(dirpath, filename)
-                    with Image.open(filepath) as img:
-                        width, height = img.size
-                        self.image_stats['total_images'] += 1
-                        total_width += width
-                        total_height += height
-                        if width < min_img_size[0] or height < min_img_size[1]:
-                            self.image_stats['filtered_images'] += 1
-                        else:
-                            self.filepaths.append(filepath)
-                            self.image_stats['min_size'] = (
-                                min(self.image_stats['min_size'][0], width),
-                                min(self.image_stats['min_size'][1], height)
-                            )
-                            self.image_stats['max_size'] = (
-                                max(self.image_stats['max_size'][0], width),
-                                max(self.image_stats['max_size'][1], height)
-                            )
-                            self.image_stats['avg_width'] += width
-                            self.image_stats['avg_height'] += height
-
-        remaining_images = self.image_stats['total_images'] - self.image_stats['filtered_images']
-        if remaining_images > 0:
-            self.image_stats['avg_width'] /= remaining_images
-            self.image_stats['avg_height'] /= remaining_images
-
-        self.image_stats['avg_width'] = round(self.image_stats['avg_width'])
-        self.image_stats['avg_height'] = round(self.image_stats['avg_height'])
-
-        # No second pass needed; we have already filtered images below the min size
-        filtered_filepaths = [fp for fp in self.filepaths if
-                              Image.open(fp).size[0] >= min_img_size[0] and Image.open(fp).size[1] >=
-                              min_img_size[1]]
-        self.filepaths = filtered_filepaths
 
     def _create_generators(self):
         """
         Create data generators for training and validation datasets.
         """
-        train_df, val_df = self._create_dataframe(self.filepaths)
+        train_df, val_df = self._create_dataframe(self.file_paths)
 
         datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
 
@@ -105,13 +51,14 @@ class DataHandler:
             class_mode='binary'
         )
 
-    def _create_dataframe(self, filepaths):
+    @staticmethod
+    def _create_dataframe(file_paths):
         """
-        Create a dataframe from the list of filepaths.
+        Create a dataframe from the list of file_paths.
         """
         data = {
-            'filepath': filepaths,
-            'class': ['PNEUMONIA' if 'PNEUMONIA' in fp else 'NORMAL' for fp in filepaths]
+            'filepath': file_paths,
+            'class': ['PNEUMONIA' if 'PNEUMONIA' in fp else 'NORMAL' for fp in file_paths]
         }
         df = pd.DataFrame(data)
         train_df = df.sample(frac=0.8, random_state=42)
