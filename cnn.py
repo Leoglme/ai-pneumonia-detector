@@ -14,11 +14,10 @@ class DataHandler:
     This class handles the creation of data generators for training, validation, and testing datasets.
     """
 
-    def __init__(self, data_dir, img_size=(235, 235), batch_sz=50, min_img_size=(256, 256)):
+    def __init__(self, data_dir, img_size=(256, 256), batch_sz=50):
         self.data_dir = data_dir
         self.img_size = img_size
         self.batch_sz = batch_sz
-        self.min_img_size = min_img_size
         self.train_dir = os.path.join(data_dir, 'train')
         self.validation_dir = os.path.join(data_dir, 'val')
         self.train_generator = None
@@ -40,6 +39,7 @@ class DataHandler:
         Filter out images that are too small and gather statistics on the image sizes.
         """
         total_width, total_height = 0, 0
+        min_img_size = (self.img_size[0] * 2, self.img_size[1] * 2)
 
         for dirpath, _, filenames in os.walk(self.data_dir):
             for filename in filenames:
@@ -50,7 +50,7 @@ class DataHandler:
                         self.image_stats['total_images'] += 1
                         total_width += width
                         total_height += height
-                        if width < self.min_img_size[0] or height < self.min_img_size[1]:
+                        if width < min_img_size[0] or height < min_img_size[1]:
                             self.image_stats['filtered_images'] += 1
                         else:
                             self.filepaths.append(filepath)
@@ -73,19 +73,10 @@ class DataHandler:
         self.image_stats['avg_width'] = round(self.image_stats['avg_width'])
         self.image_stats['avg_height'] = round(self.image_stats['avg_height'])
 
-        avg_width = self.image_stats['avg_width']
-        avg_height = self.image_stats['avg_height']
-
-        # Second pass to filter images smaller than the 20% of the average size
-        filtered_filepaths = []
-        for filepath in self.filepaths:
-            with Image.open(filepath) as img:
-                width, height = img.size
-                if width < avg_width * 0.8 or height < avg_height * 0.8:
-                    self.image_stats['filtered_images'] += 1
-                else:
-                    filtered_filepaths.append(filepath)
-
+        # No second pass needed; we have already filtered images below the min size
+        filtered_filepaths = [fp for fp in self.filepaths if
+                              Image.open(fp).size[0] >= min_img_size[0] and Image.open(fp).size[1] >=
+                              min_img_size[1]]
         self.filepaths = filtered_filepaths
 
     def _create_generators(self):
@@ -209,6 +200,14 @@ if __name__ == "__main__":
     # Initialize data handlers
     data_handler = DataHandler(data_directory, image_size, batch_size)
 
+    # Print image statistics
+    print(f"Total images: {data_handler.image_stats['total_images']}")
+    print(f"Filtered images: {data_handler.image_stats['filtered_images']}")
+    print(f"Min image size: {data_handler.image_stats['min_size']}")
+    print(f"Max image size: {data_handler.image_stats['max_size']}")
+    print(f"Average image width: {data_handler.image_stats['avg_width']}")
+    print(f"Average image height: {data_handler.image_stats['avg_height']}")
+
     # Initialize the model
     detector = PneumoniaDetector(input_shape=(image_size[0], image_size[1], 3))
 
@@ -223,11 +222,3 @@ if __name__ == "__main__":
     for i in range(3):
         test_loss, test_acc = detector.evaluate(val_ds, test_steps)
         print(f'Test accuracy: {test_acc * 100:.2f}%')
-
-    # Print image statistics
-    print(f"Total images: {data_handler.image_stats['total_images']}")
-    print(f"Filtered images: {data_handler.image_stats['filtered_images']}")
-    print(f"Min image size: {data_handler.image_stats['min_size']}")
-    print(f"Max image size: {data_handler.image_stats['max_size']}")
-    print(f"Average image width: {data_handler.image_stats['avg_width']}")
-    print(f"Average image height: {data_handler.image_stats['avg_height']}")
