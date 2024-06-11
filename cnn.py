@@ -1,4 +1,6 @@
 import os
+from PIL import Image
+import pandas as pd
 
 # Disable oneDNN optimizations
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
@@ -12,32 +14,113 @@ class DataHandler:
     This class handles the creation of data generators for training, validation, and testing datasets.
     """
 
-    def __init__(self, data_dir, img_size=(235, 235), batch_sz=50):
+    def __init__(self, data_dir, img_size=(256, 256), batch_sz=50):
         self.data_dir = data_dir
         self.img_size = img_size
         self.batch_sz = batch_sz
         self.train_dir = os.path.join(data_dir, 'train')
         self.validation_dir = os.path.join(data_dir, 'val')
         self.train_generator = None
+        self.validation_generator = None
+        self.image_stats = {
+            'total_images': 0,
+            'min_size': (float('inf'), float('inf')),
+            'max_size': (0, 0),
+            'avg_width': 0,
+            'avg_height': 0,
+            'filtered_images': 0
+        }
+        self.filepaths = []
+        self._filter_images()
         self._create_generators()
+
+    def _filter_images(self):
+        """
+        Filter out images that are too small and gather statistics on the image sizes.
+        """
+        total_width, total_height = 0, 0
+        min_img_size = (self.img_size[0] * 2, self.img_size[1] * 2)
+
+        for dirpath, _, filenames in os.walk(self.data_dir):
+            for filename in filenames:
+                if filename.lower().endswith(('png', 'jpg', 'jpeg')):
+                    filepath = os.path.join(dirpath, filename)
+                    with Image.open(filepath) as img:
+                        width, height = img.size
+                        self.image_stats['total_images'] += 1
+                        total_width += width
+                        total_height += height
+                        if width < min_img_size[0] or height < min_img_size[1]:
+                            self.image_stats['filtered_images'] += 1
+                        else:
+                            self.filepaths.append(filepath)
+                            self.image_stats['min_size'] = (
+                                min(self.image_stats['min_size'][0], width),
+                                min(self.image_stats['min_size'][1], height)
+                            )
+                            self.image_stats['max_size'] = (
+                                max(self.image_stats['max_size'][0], width),
+                                max(self.image_stats['max_size'][1], height)
+                            )
+                            self.image_stats['avg_width'] += width
+                            self.image_stats['avg_height'] += height
+
+        remaining_images = self.image_stats['total_images'] - self.image_stats['filtered_images']
+        if remaining_images > 0:
+            self.image_stats['avg_width'] /= remaining_images
+            self.image_stats['avg_height'] /= remaining_images
+
+        self.image_stats['avg_width'] = round(self.image_stats['avg_width'])
+        self.image_stats['avg_height'] = round(self.image_stats['avg_height'])
+
+        # No second pass needed; we have already filtered images below the min size
+        filtered_filepaths = [fp for fp in self.filepaths if
+                              Image.open(fp).size[0] >= min_img_size[0] and Image.open(fp).size[1] >=
+                              min_img_size[1]]
+        self.filepaths = filtered_filepaths
 
     def _create_generators(self):
         """
-        Create data generators for training, validation, and testing datasets.
+        Create data generators for training and validation datasets.
         """
+        train_df, val_df = self._create_dataframe(self.filepaths)
 
         datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
 
-        self.train_generator = datagen.flow_from_directory(
-            self.train_dir,
+        self.train_generator = datagen.flow_from_dataframe(
+            train_df,
+            x_col='filepath',
+            y_col='class',
             target_size=self.img_size,
             batch_size=self.batch_sz,
             class_mode='binary'
         )
 
-    def get_train_dataset(self):
+        self.validation_generator = datagen.flow_from_dataframe(
+            val_df,
+            x_col='filepath',
+            y_col='class',
+            target_size=self.img_size,
+            batch_size=self.batch_sz,
+            class_mode='binary'
+        )
+
+    def _create_dataframe(self, filepaths):
+        """
+        Create a dataframe from the list of filepaths.
+        """
+        data = {
+            'filepath': filepaths,
+            'class': ['PNEUMONIA' if 'PNEUMONIA' in fp else 'NORMAL' for fp in filepaths]
+        }
+        df = pd.DataFrame(data)
+        train_df = df.sample(frac=0.8, random_state=42)
+        val_df = df.drop(train_df.index)
+        return train_df, val_df
+
+    def get_dataset(self, generator):
         return tf.data.Dataset.from_generator(
-            lambda: self.train_generator,
+            lambda: generator,
             output_signature=(
                 tf.TensorSpec(shape=(None, *self.img_size, 3), dtype=tf.float32),
                 tf.TensorSpec(shape=(None,), dtype=tf.float32)
@@ -88,6 +171,7 @@ class PneumoniaDetector:
             validation_data=val_ds,
             validation_steps=val_steps
         )
+        self.model.summary()
         return history
 
     def evaluate(self, test_ds, test_steps):
@@ -116,20 +200,25 @@ if __name__ == "__main__":
     # Initialize data handlers
     data_handler = DataHandler(data_directory, image_size, batch_size)
 
+    # Print image statistics
+    print(f"Total images: {data_handler.image_stats['total_images']}")
+    print(f"Filtered images: {data_handler.image_stats['filtered_images']}")
+    print(f"Min image size: {data_handler.image_stats['min_size']}")
+    print(f"Max image size: {data_handler.image_stats['max_size']}")
+    print(f"Average image width: {data_handler.image_stats['avg_width']}")
+    print(f"Average image height: {data_handler.image_stats['avg_height']}")
+
     # Initialize the model
     detector = PneumoniaDetector(input_shape=(image_size[0], image_size[1], 3))
 
     # Get datasets
-    train_ds = data_handler.get_train_dataset()
+    train_ds = data_handler.get_dataset(data_handler.train_generator)
+    val_ds = data_handler.get_dataset(data_handler.validation_generator)
 
     # Train the model
-    history = detector.train(train_ds, train_ds, num_epochs, steps_per_epoch, validation_steps)
+    history = detector.train(train_ds, val_ds, num_epochs, steps_per_epoch, validation_steps)
 
     # Evaluate the model
-    test_loss, test_acc = detector.evaluate(train_ds, test_steps)
-    print(f'Test accuracy: {test_acc * 100:.2f}%')
-
-    # Print additional metrics
-    print("Training and validation history:")
-    for key in history.history:
-        print(f"{key}: {history.history[key]}")
+    for i in range(3):
+        test_loss, test_acc = detector.evaluate(val_ds, test_steps)
+        print(f'Test accuracy: {test_acc * 100:.2f}%')
