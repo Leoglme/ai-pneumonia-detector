@@ -1,5 +1,6 @@
 .idea
 .vscode
 .vs
-
+knn_results.json
+cnn_results.json
 **/.DS_Store
