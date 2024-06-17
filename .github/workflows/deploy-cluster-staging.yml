@@ -1,0 +1,37 @@
+name: deploy_cluster_staging
+
+on:
+  push:
+    branches:
+      - staging
+  workflow_dispatch:
+
+jobs:
+  deploy_cluster:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run KNN model script
+        run: |
+          python knn_leo.py
+
+      - name: Run CNN model script
+        run: |
+          python cnn.py
+
+      - name: Create Jupyter Notebook
+        run: |
+          echo "import IPython" > ai_model_notebook.ipynb
+          echo "print('Notebook created with model outputs')" >> ai_model_notebook.ipynb
+          # Add more commands here to populate the notebook with your model's outputs or analysis
