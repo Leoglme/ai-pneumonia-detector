@@ -3,3 +3,4 @@ scikit-learn
 Pillow
 pandas
 jupyter
+nbconvert
