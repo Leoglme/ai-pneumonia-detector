@@ -1,0 +1,3 @@
+[lfs]
+    url = "https://gitea.crzcommon.com/crzgames/ai-pneumonia-detector.git/info/lfs"
+    locksverify = true

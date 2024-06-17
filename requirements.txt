@@ -1,2 +1,4 @@
 tensorflow
-transformers
+scikit-learn
+Pillow
+pandas
