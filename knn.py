@@ -61,7 +61,7 @@ train_images_flat = train_images.reshape((train_images.shape[0], -1))
 val_images_flat = val_images.reshape((val_images.shape[0], -1))
 test_images_flat = test_images.reshape((test_images.shape[0], -1))
 
-# Calculate image size statistics
+# Calculate image size staCCtistics
 def calculate_image_size(sizes):
     sizes = np.array(sizes)
     avg_size = np.mean(sizes, axis=0)
