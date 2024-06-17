@@ -22,14 +22,34 @@ test_dataset = load_data('chest_Xray/test')
 def dataset_to_numpy(dataset):
     images = []
     labels = []
+    sizes = []
     for image, label in dataset.unbatch():
         images.append(image.numpy())
         labels.append(label.numpy())
-    return np.array(images), np.array(labels)
+        # store images height and width
+        sizes.append(image.shape[:2])
+    return np.array(images), np.array(labels), np.array(sizes)
 
-train_images, train_labels = dataset_to_numpy(train_dataset)
-val_images, val_labels = dataset_to_numpy(validation_dataset)
-test_images, test_labels = dataset_to_numpy(test_dataset)
+train_images, train_labels, train_sizes = dataset_to_numpy(train_dataset)
+val_images, val_labels, val_sizes = dataset_to_numpy(validation_dataset)
+test_images, test_labels, test_sizes = dataset_to_numpy(test_dataset)
+
+# Remove small images
+min_size = (100, 100)
+def remove_small_images (images, labels, sizes, min_size):
+    filtered_images = []
+    filtered_labels = []
+    for image, label, size in zip(images, labels, sizes): 
+        if size[0] >= min_size[0] and size[1]>= min_size[1]:
+            filtered_images.append(image), 
+            filtered_labels.append(label)
+    return np.array(filtered_images), np.array(filtered_labels)
+
+
+train_images, train_labels = remove_small_images(train_images, train_labels, train_sizes)
+val_images, val_labels = remove_small_images(val_images, val_labels, val_sizes)
+test_images, test_labels = remove_small_images(test_images, test_labels, test_sizes)
+            
 
 # Normalize images
 train_images = train_images / 255.0
@@ -40,6 +60,7 @@ test_images = test_images / 255.0
 train_images_flat = train_images.reshape((train_images.shape[0], -1))
 val_images_flat = val_images.reshape((val_images.shape[0], -1))
 test_images_flat = test_images.reshape((test_images.shape[0], -1))
+
 
 ### Train-Validation-Test
 
