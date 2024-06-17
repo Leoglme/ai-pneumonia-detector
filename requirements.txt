@@ -4,3 +4,5 @@ Pillow
 pandas
 jupyter
 nbconvert
+nbformat
+matplotlib
