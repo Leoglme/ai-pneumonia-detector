@@ -18,13 +18,14 @@ train_dataset = load_data('chest_Xray/train')
 validation_dataset = load_data('chest_Xray/val') 
 test_dataset = load_data('chest_Xray/test')   
 
-# Function to convert dataset into numpy arrays
-def dataset_to_numpy(dataset):
+# Function to convert dataset into numpy arrays and resize images
+def dataset_to_numpy(dataset, target_size=(150, 150)):
     images = []
     labels = []
     sizes = []
     for image, label in dataset.unbatch():
-        images.append(image.numpy())
+        resized_image = tf.image.resize(image, target_size)
+        images.append(resized_image.numpy())
         labels.append(label.numpy())
         # store images height and width
         sizes.append(image.shape[:2])
@@ -34,21 +35,21 @@ train_images, train_labels, train_sizes = dataset_to_numpy(train_dataset)
 val_images, val_labels, val_sizes = dataset_to_numpy(validation_dataset)
 test_images, test_labels, test_sizes = dataset_to_numpy(test_dataset)
 
-# Remove small images
-min_size = (100, 100)
-def remove_small_images (images, labels, sizes, min_size):
-    filtered_images = []
-    filtered_labels = []
-    for image, label, size in zip(images, labels, sizes): 
-        if size[0] >= min_size[0] and size[1]>= min_size[1]:
-            filtered_images.append(image), 
-            filtered_labels.append(label)
-    return np.array(filtered_images), np.array(filtered_labels)
+# # Remove small images
+# min_size = (100, 100)
+# def remove_small_images (images, labels, sizes, min_size):
+#     filtered_images = []
+#     filtered_labels = []
+#     for image, label, size in zip(images, labels, sizes): 
+#         if size[0] >= min_size[0] and size[1]>= min_size[1]:
+#             filtered_images.append(image), 
+#             filtered_labels.append(label)
+#     return np.array(filtered_images), np.array(filtered_labels)
 
 
-train_images, train_labels = remove_small_images(train_images, train_labels, train_sizes)
-val_images, val_labels = remove_small_images(val_images, val_labels, val_sizes)
-test_images, test_labels = remove_small_images(test_images, test_labels, test_sizes)
+# train_images, train_labels = remove_small_images(train_images, train_labels, train_sizes)
+# val_images, val_labels = remove_small_images(val_images, val_labels, val_sizes)
+# test_images, test_labels = remove_small_images(test_images, test_labels, test_sizes)
             
 
 # Normalize images
