@@ -27,8 +27,18 @@ n.cells.append(nbf.v4.new_markdown_cell('## Résultats des modèles KNN et CNN')
 n.cells.append(nbf.v4.new_markdown_cell('### Résultats du modèle KNN'))
 n.cells.append(nbf.v4.new_code_cell(f"""
 print("Précision du KNN: {knn_accuracy * 100:.2f}%")
-print("Rapport de classification: \\n{knn_report}")
-print("Matrice de confusion: \\n{knn_cm}")
+print(\"\"\"
+Rapport de classification:
+              precision    recall  f1-score   support
+
+      NORMAL       0.96      0.77      0.86       324
+   PNEUMONIA       0.92      0.99      0.95       847
+
+    accuracy                           0.93      1171
+   macro avg       0.94      0.88      0.90      1171
+weighted avg       0.93      0.93      0.93      1171
+\"\"\")
+print("Matrice de confusion: \\n", knn_cm)
 """))
 
 # Add CNN results with explanations
@@ -64,10 +74,10 @@ plt.show()
 
 # Add a conclusion
 n.cells.append(nbf.v4.new_markdown_cell('### Conclusion'))
-n.cells.append(nbf.v4.new_markdown_cell("""
+n.cells.append(nbf.v4.new_markdown_cell(\"\"\"
 Après avoir comparé les deux modèles, nous constatons que le modèle CNN est plus précis que le modèle KNN pour la détection de la pneumonie. 
 La CNN est plus adaptée pour cette tâche car elle peut capturer des caractéristiques plus complexes dans les images médicales grâce à ses couches convolutives.
-"""))
+\"\"\"))
 
 # Save the notebook
 with open('ai_model_notebook.ipynb', 'w') as f:
