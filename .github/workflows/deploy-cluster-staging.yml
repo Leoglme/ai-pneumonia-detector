@@ -19,19 +19,17 @@ jobs:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
 
       - name: Run KNN model script
-        run: |
-          python knn_leo.py
+        run: python knn_leo.py
 
       - name: Run CNN model script
-        run: |
-          python cnn.py
+        run: python cnn.py
 
       - name: Create Jupyter Notebook
-        run: |
-          echo "import IPython" > ai_model_notebook.ipynb
-          echo "print('Notebook created with model outputs')" >> ai_model_notebook.ipynb
-          # Add more commands here to populate the notebook with your model's outputs or analysis
+        run: python create_notebook.py
+
+      - name: Convert Notebook to HTML
+        run: jupyter nbconvert --to html ai_model_notebook.ipynb --output index.html
+
