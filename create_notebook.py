@@ -1,5 +1,6 @@
 import nbformat as nbf
 import json
+import pandas as pd
 import matplotlib.pyplot as plt
 
 def load_results(file_path):
@@ -41,7 +42,7 @@ n.cells.append(nbf.v4.new_markdown_cell('### Comparaison des modèles KNN et CNN
 n.cells.append(nbf.v4.new_code_cell(f"""
 knn_vs_cnn = {{
     'Modèle': ['KNN', 'CNN'],
-    'Précision': [knn_accuracy, cnn_accuracy]
+    'Précision': [{knn_accuracy}, {cnn_accuracy}]
 }}
 
 df_comparison = pd.DataFrame(knn_vs_cnn)
