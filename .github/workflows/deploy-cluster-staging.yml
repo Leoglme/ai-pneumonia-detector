@@ -31,5 +31,7 @@ jobs:
         run: python create_notebook.py
 
       - name: Convert Notebook to HTML
-        run: jupyter nbconvert --to html ai_model_notebook.ipynb --output index.html
+        run: |
+          jupyter nbconvert --to html ai_model_notebook.ipynb --output index.html
+          cat index.html
 
