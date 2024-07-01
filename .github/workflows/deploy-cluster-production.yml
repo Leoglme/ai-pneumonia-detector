@@ -61,7 +61,7 @@ jobs:
 
       - name: Replace image tag in deployment.yaml for Kubernetes
         run: |
-          sed -i 's/\${TAG_VERSION}/'${{ github.sha }}'/g' k8s/production/deployment.yaml
+          sed -i 's/\${TAG_VERSION}/'${{ steps.previoustag.outputs.tag }}'/g' k8s/production/deployment.yaml
 
       - name: Connect to the cluster K3S for deploy
         uses: actions-hub/kubectl@master
