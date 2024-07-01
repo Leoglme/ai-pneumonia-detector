@@ -34,25 +34,12 @@ jobs:
         run: |
           jupyter nbconvert --to notebook --execute ai_model_notebook.ipynb --no-input --output executed_notebook.ipynb
           jupyter nbconvert --to html executed_notebook.ipynb --no-input --output index.html
-          jupyter nbconvert --to pdf executed_notebook.ipynb --no-input --output index.pdf
 
       - name: Upload HTML as artifact
         uses: actions/upload-artifact@v4
         with:
           name: model-results-html
           path: index.html
-          
-      - name: Upload PDF as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: model-results-pdf
-          path: index.pdf
-
-      - name: Upload Notebook as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: model-results-notebook
-          path: ai_model_notebook.ipynb
 
       - name: Login to DockerHub
         uses: docker/login-action@v3
