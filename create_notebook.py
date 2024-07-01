@@ -1,9 +1,7 @@
 import nbformat as nbf
 
-# Création d'un nouveau notebook
 n = nbf.v4.new_notebook()
 
-# Ajouter le titre et les résultats dans une seule cellule de code pour simplifier l'exécution
 code = """
 import json
 import matplotlib.pyplot as plt
