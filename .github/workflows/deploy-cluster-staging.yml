@@ -53,7 +53,7 @@ jobs:
           context: .
           file: ./docker/Dockerfile
           push: true
-          tags: corentin35/zoidberg-website-frontend:staging-${{ github.sha }}
+          tags: corentin35/zoiberg-website-frontend:staging-${{ github.sha }}
 
       - name: Replace image tag in deployment.yaml for Kubernetes
         run: |
