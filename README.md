@@ -4,6 +4,8 @@
 - Python (Language)
 - CI / CD (Github Actions)
 - Libraries (tensorflow)
+- Docker
+- Kubernetes (Staging / Production)
 
 <br /><br /><br /><br />
 

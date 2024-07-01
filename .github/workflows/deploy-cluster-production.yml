@@ -34,7 +34,7 @@ jobs:
       - name: Create Jupyter Notebook
         run: python create_notebook.py
 
-        - name: Execute and Convert Notebook
+      - name: Execute and Convert Notebook
         run: |
           jupyter nbconvert --to notebook --execute ai_model_notebook.ipynb --no-input --output executed_notebook.ipynb
           jupyter nbconvert --to html executed_notebook.ipynb --no-input --output index.html
