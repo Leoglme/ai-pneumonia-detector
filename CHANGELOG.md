@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/Leoglme/ai-pneumonia-detector/compare/v1.0.1...v1.0.2) (2024-07-01)
+
+
+### Bug Fixes
+
+* rename title ([9732d1c](https://github.com/Leoglme/ai-pneumonia-detector/commit/9732d1c6a22b2bf8e86707ea78331f65bd970ea5))
+
 ## [1.0.1](https://github.com/Leoglme/ai-pneumonia-detector/compare/v1.0.0...v1.0.1) (2024-07-01)
 
 
