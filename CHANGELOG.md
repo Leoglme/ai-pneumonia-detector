@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.3](https://github.com/Leoglme/ai-pneumonia-detector/compare/v1.0.2...v1.0.3) (2024-07-01)
+
+
+### Bug Fixes
+
+* delete steps ci for prod ([4b806d5](https://github.com/Leoglme/ai-pneumonia-detector/commit/4b806d5f1b971db87f092420393a927e635180e6))
+* fixed syntax YAML for prod in ci ([36bfeeb](https://github.com/Leoglme/ai-pneumonia-detector/commit/36bfeeba2075d7a2ae751d9a81a2673e3fd5e5f9))
+
 ## [1.0.2](https://github.com/Leoglme/ai-pneumonia-detector/compare/v1.0.1...v1.0.2) (2024-07-01)
 
 
