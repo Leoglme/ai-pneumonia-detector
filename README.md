@@ -1,4 +1,4 @@
-# Zoid Berg 2.0
+# Zoi Berg 2.0
 
 ## 🛠 Tech Stack
 - Python (Language)
