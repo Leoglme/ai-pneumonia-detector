@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: staging-zoiberg-website-frontend-service
+  namespace: staging-zoiberg-website-frontend
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+  selector:
+    app: staging-zoiberg-website-frontend

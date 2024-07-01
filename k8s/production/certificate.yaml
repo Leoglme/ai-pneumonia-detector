@@ -1,0 +1,12 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: zoiberg-frontend-crzcommon-cert
+  namespace: zoiberg-website-frontend
+spec:
+  secretName: zoiberg-frontend-tls
+  dnsNames:
+    - zoiberg.crzcommon.com
+  issuerRef:
+    name: letsencrypt-production
+    kind: ClusterIssuer

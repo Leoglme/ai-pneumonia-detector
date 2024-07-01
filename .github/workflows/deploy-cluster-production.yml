@@ -23,22 +23,27 @@ jobs:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
 
       - name: Run KNN model script
-        run: |
-          python knn_leo.py
+        run: python knn_leo.py
 
       - name: Run CNN model script
-        run: |
-          python cnn.py
+        run: python cnn.py
 
       - name: Create Jupyter Notebook
+        run: python create_notebook.py
+
+      - name: Execute and Convert Notebook
         run: |
-          echo "import IPython" > ai_model_notebook.ipynb
-          echo "print('Notebook created with model outputs')" >> ai_model_notebook.ipynb
-          # Add more commands here to populate the notebook with your model's outputs or analysis
+          jupyter nbconvert --to notebook --execute ai_model_notebook.ipynb --no-input --output executed_notebook.ipynb
+          jupyter nbconvert --to html executed_notebook.ipynb --no-input --output index.html
+
+      - name: Upload HTML as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-results-html
+          path: index.html
 
       - name: Login to DockerHub
         uses: docker/login-action@v3
@@ -46,25 +51,17 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      - name: Build and push Docker image - Production version latest
-        uses: docker/build-push-action@v5
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./docker/production/Dockerfile
+          file: ./docker/Dockerfile
           push: true
-          tags: corentin35/seatyrants-website-frontend:latest
-
-      - name: Build and push Docker image - Production version x.x.x
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./docker/production/Dockerfile
-          push: true
-          tags: corentin35/seatyrants-website-frontend:${{ steps.previoustag.outputs.tag }}
+          tags: corentin35/zoidberg-website-frontend:${{ steps.previoustag.outputs.tag }}
 
       - name: Replace image tag in deployment.yaml for Kubernetes
         run: |
-          sed -i 's/\${TAG_VERSION}/'${{ steps.previoustag.outputs.tag }}'/g' k8s/production/deployment.yaml
+          sed -i 's/\${TAG_VERSION}/'${{ github.sha }}'/g' k8s/production/deployment.yaml
 
       - name: Connect to the cluster K3S for deploy
         uses: actions-hub/kubectl@master

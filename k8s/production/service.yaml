@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: zoiberg-website-frontend-service
+  namespace: zoiberg-website-frontend
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+  selector:
+    app: zoiberg-website-frontend
