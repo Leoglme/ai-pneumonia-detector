@@ -1,12 +1,12 @@
 import os
 import pandas as pd
 from utils.image_utils import ImageUtils
+import tensorflow as tf
+import json
 
 # Disable oneDNN optimizations
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress TensorFlow warnings
-
-import tensorflow as tf
 
 
 class DataHandler:
@@ -139,10 +139,10 @@ if __name__ == "__main__":
     data_directory = 'datasets'
     image_size = (256, 256)
     batch_size = 32
-    num_epochs = 10
-    steps_per_epoch = 50
-    validation_steps = 50
-    test_steps = 50
+    num_epochs = 2 #10
+    steps_per_epoch = 2 #50
+    validation_steps = 2 #50
+    test_steps = 2 #50
 
     # Initialize data handlers
     data_handler = DataHandler(data_directory, image_size, batch_size)
@@ -166,6 +166,13 @@ if __name__ == "__main__":
     history = detector.train(train_ds, val_ds, num_epochs, steps_per_epoch, validation_steps)
 
     # Evaluate the model
-    for i in range(3):
-        test_loss, test_acc = detector.evaluate(val_ds, test_steps)
-        print(f'Test accuracy: {test_acc * 100:.2f}%')
+    test_loss, test_acc = detector.evaluate(val_ds, test_steps)
+    print(f'Test accuracy: {test_acc * 100:.2f}%')
+
+    # Save the results to a file
+    results = {
+        "test_loss": test_loss,
+        "test_accuracy": test_acc
+    }
+    with open('cnn_results.json', 'w') as f:
+        json.dump(results, f)

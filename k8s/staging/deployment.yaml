@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: staging-zoiberg-website-frontend-deployment
+  namespace: staging-zoiberg-website-frontend
+  labels:
+    app: staging-zoiberg-website-frontend
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: staging-zoiberg-website-frontend
+  template:
+    metadata:
+      labels:
+        app: staging-zoiberg-website-frontend
+    spec:
+      containers:
+        - name: staging-zoiberg-website-frontend
+          image: corentin35/zoiberg-website-frontend:staging-${TAG_VERSION}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          env:
+            - name: PORT
+              value: '80'
+          resources:
+            requests:
+              cpu: '300m'
+              memory: '400Mi'
+            limits:
+              cpu: '600m'
+              memory: '800Mi'
+      imagePullSecrets:
+        - name: regcred

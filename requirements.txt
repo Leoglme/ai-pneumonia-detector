@@ -2,3 +2,7 @@ tensorflow
 scikit-learn
 Pillow
 pandas
+jupyter
+nbconvert
+nbformat
+matplotlib

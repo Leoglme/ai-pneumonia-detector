@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zoiberg-website-frontend-deployment
+  namespace: zoiberg-website-frontend
+  labels:
+    app: zoiberg-website-frontend
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: zoiberg-website-frontend
+  template:
+    metadata:
+      labels:
+        app: zoiberg-website-frontend
+    spec:
+      containers:
+        - name: zoiberg-website-frontend
+          image: corentin35/zoiberg-website-frontend:${TAG_VERSION}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          env:
+            - name: PORT
+              value: '80'
+          resources:
+            requests:
+              cpu: '300m'
+              memory: '400Mi'
+            limits:
+              cpu: '600m'
+              memory: '800Mi'
+      imagePullSecrets:
+        - name: regcred

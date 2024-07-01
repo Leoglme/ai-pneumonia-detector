@@ -1,9 +1,9 @@
-name: deploy_cluster_production
+name: deploy_cluster_staging
 
 on:
-  release:
-    types:
-      - published
+  push:
+    branches:
+      - staging
   workflow_dispatch:
 
 jobs:
@@ -12,10 +12,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Get latest release tag
-        id: previoustag
-        uses: WyriHaximus/github-action-get-previous-tag@v1
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -38,12 +34,19 @@ jobs:
         run: |
           jupyter nbconvert --to notebook --execute ai_model_notebook.ipynb --no-input --output executed_notebook.ipynb
           jupyter nbconvert --to html executed_notebook.ipynb --no-input --output index.html
+          jupyter nbconvert --to pdf executed_notebook.ipynb --no-input --output index.pdf
 
       - name: Upload HTML as artifact
         uses: actions/upload-artifact@v4
         with:
           name: model-results-html
           path: index.html
+          
+      - name: Upload PDF as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-results-pdf
+          path: index.pdf
 
       - name: Login to DockerHub
         uses: docker/login-action@v3
@@ -57,11 +60,11 @@ jobs:
           context: .
           file: ./docker/Dockerfile
           push: true
-          tags: corentin35/zoidberg-website-frontend:${{ steps.previoustag.outputs.tag }}
+          tags: corentin35/zoiberg-website-frontend:staging-${{ github.sha }}
 
       - name: Replace image tag in deployment.yaml for Kubernetes
         run: |
-          sed -i 's/\${TAG_VERSION}/'${{ github.sha }}'/g' k8s/production/deployment.yaml
+          sed -i 's/\${TAG_VERSION}/'${{ github.sha }}'/g' k8s/staging/deployment.yaml
 
       - name: Connect to the cluster K3S for deploy
         uses: actions-hub/kubectl@master
@@ -69,10 +72,10 @@ jobs:
           KUBE_CONFIG: ${{ secrets.KUBECONFIG }}
         with:
           args: |
-            apply -f k8s/production/namespace.yaml
-            -f k8s/production/certificate.yaml
-            -f k8s/production/docker-registry-secret.yaml
-            -f k8s/production/deployment.yaml
-            -f k8s/production/hpa.yaml
-            -f k8s/production/ingress.yaml
-            -f k8s/production/service.yaml
+            apply -f k8s/staging/namespace.yaml
+            -f k8s/staging/certificate.yaml
+            -f k8s/staging/docker-registry-secret.yaml
+            -f k8s/staging/deployment.yaml
+            -f k8s/staging/hpa.yaml
+            -f k8s/staging/ingress.yaml
+            -f k8s/staging/service.yaml

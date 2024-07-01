@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: staging-zoiberg-website-frontend-ingress
+  namespace: staging-zoiberg-website-frontend
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - zoiberg.crzcommon.com
+      secretName: zoiberg-frontend-tls
+  rules:
+    - host: zoiberg.crzcommon.com
+      http:
+        paths:
+          - pathType: Prefix
+            path: '/'
+            backend:
+              service:
+                name: zoiberg-website-frontend-service
+                port:
+                  number: 80

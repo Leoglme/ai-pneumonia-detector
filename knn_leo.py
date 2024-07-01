@@ -5,6 +5,7 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 from sklearn.preprocessing import StandardScaler
 import numpy as np
 from PIL import Image
+import json
 
 
 class DataHandler:
@@ -119,3 +120,12 @@ if __name__ == "__main__":
     print(report)
     print("Confusion Matrix:")
     print(cm)
+
+    # Save the results to a file
+    results = {
+        "accuracy": accuracy,
+        "classification_report": report,
+        "confusion_matrix": cm.tolist()
+    }
+    with open('knn_results.json', 'w') as f:
+        json.dump(results, f)
