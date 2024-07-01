@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/Leoglme/ai-pneumonia-detector/compare/v1.0.0...v1.0.1) (2024-07-01)
+
+
+### Bug Fixes
+
+* fixed ci prod ([531a956](https://github.com/Leoglme/ai-pneumonia-detector/commit/531a95645231be6d63496fe0ca2bb5c2fb2f472a))
+
 ## 1.0.0 (2024-07-01)
 
 
