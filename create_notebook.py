@@ -14,6 +14,7 @@ h1 {color: navy;}
 code = """
 import json
 import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix, roc_auc_score, roc_curve, ConfusionMatrixDisplay
 
 # Chargement des résultats
 with open("knn_results.json", "r") as file:
@@ -39,6 +40,36 @@ plt.bar(labels, accuracy, color=['blue', 'green'])
 plt.title('Comparaison de la précision')
 plt.ylabel('Précision')
 plt.show()
+
+def plot_roc_curve(self, fpr, tpr, roc_auc):
+    """
+    Plot the ROC curve.
+    """
+    plt.figure()
+    plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
+    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver Operating Characteristic (ROC) Curve')
+    plt.legend(loc="lower right")
+    plt.show()
+
+def plot_confusion_matrix(self, cm):
+    """
+    Plot the confusion matrix.
+    """
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=['NORMAL', 'PNEUMONIA'])
+    disp.plot(cmap=plt.cm.Blues)
+    plt.title('Confusion Matrix')
+    plt.show()
+
+# Plot ROC curve
+detector.plot_roc_curve(knn_results['fpr'], knn_results['tpr'], knn_results['roc_auc'])
+
+# Plot Confusion Matrix
+detector.plot_confusion_matrix(knn_results['confusion_matrix'])
 """
 
 n.cells.append(nbf.v4.new_code_cell(code))
