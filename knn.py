@@ -1,137 +1,131 @@
-import numpy as np
-from sklearn.model_selection import KFold, train_test_split
+import pandas as pd
+from utils.image_utils import ImageUtils
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score, log_loss
-import tensorflow as tf
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.preprocessing import StandardScaler
+import numpy as np
+from PIL import Image
+import json
 
 
-# Load datasets
-def load_data (directory, image_size=(150, 150), batch_size=32, label_mode='binary'):
-    return tf.keras.utils.image_dataset_from_directory(
-        directory,
-        image_size=image_size,
-        batch_size=batch_size,
-        label_mode=label_mode
-    )
+class DataHandler:
+    """
+    This class handles the creation of datasets for training and validation.
+    """
 
-train_dataset = load_data('chest_Xray/train')    
-validation_dataset = load_data('chest_Xray/val') 
-test_dataset = load_data('chest_Xray/test')   
+    def __init__(self, data_dir, img_size=(128, 128)):
+        self.data_dir = data_dir
+        self.img_size = img_size
+        self.file_paths, self.image_stats = ImageUtils.filter_images(data_dir, img_size)
+        self.train_df, self.val_df = self._create_dataframe(self.file_paths)
+        self.X_train, self.X_val, self.y_train, self.y_val = self._create_datasets()
 
-# Function to convert dataset into numpy arrays
-def dataset_to_numpy(dataset):
-    images = []
-    labels = []
-    sizes = []
-    for image, label in dataset.unbatch():
-        images.append(image.numpy())
-        labels.append(label.numpy())
-        # store images height and width
-        sizes.append(image.shape[:2])
-    return np.array(images), np.array(labels), np.array(sizes)
+    @staticmethod
+    def _create_dataframe(file_paths):
+        """
+        Create a dataframe from the list of file_paths.
+        """
+        data = {
+            'filepath': file_paths,
+            'class': ['PNEUMONIA' if 'PNEUMONIA' in fp else 'NORMAL' for fp in file_paths]
+        }
+        df = pd.DataFrame(data)
+        train_df = df.sample(frac=0.8, random_state=42)
+        val_df = df.drop(train_df.index)
+        return train_df, val_df
 
-train_images, train_labels, train_sizes = dataset_to_numpy(train_dataset)
-val_images, val_labels, val_sizes = dataset_to_numpy(validation_dataset)
-test_images, test_labels, test_sizes = dataset_to_numpy(test_dataset)
+    def _load_image(self, filepath):
+        """
+        Load and preprocess an image.
+        """
+        with Image.open(filepath) as img:
+            img = img.resize(self.img_size)
+            img_array = np.array(img)
+            # Ensure the image is 3 channels
+            if img_array.ndim == 2:
+                img_array = np.stack((img_array,)*3, axis=-1)
+            elif img_array.shape[2] == 1:
+                img_array = np.concatenate((img_array, img_array, img_array), axis=-1)
+            return img_array.flatten() / 255.0
 
-# Remove small images
-min_size = (100, 100)
-def remove_small_images (images, labels, sizes, min_size):
-    filtered_images = []
-    filtered_labels = []
-    for image, label, size in zip(images, labels, sizes): 
-        if size[0] >= min_size[0] and size[1]>= min_size[1]:
-            filtered_images.append(image), 
-            filtered_labels.append(label)
-    return np.array(filtered_images), np.array(filtered_labels)
+    def _create_datasets(self):
+        """
+        Create datasets for training and validation.
+        """
+        X_train = np.array([self._load_image(fp) for fp in self.train_df['filepath']])
+        y_train = np.array([1 if label == 'PNEUMONIA' else 0 for label in self.train_df['class']])
 
+        X_val = np.array([self._load_image(fp) for fp in self.val_df['filepath']])
+        y_val = np.array([1 if label == 'PNEUMONIA' else 0 for label in self.val_df['class']])
 
-train_images, train_labels = remove_small_images(train_images, train_labels, train_sizes)
-val_images, val_labels = remove_small_images(val_images, val_labels, val_sizes)
-test_images, test_labels = remove_small_images(test_images, test_labels, test_sizes)
-            
-
-# Normalize images
-train_images = train_images / 255.0
-val_images = val_images / 255.0
-test_images = test_images / 255.0
-
-# Reshape into 1D array for KNN
-train_images_flat = train_images.reshape((train_images.shape[0], -1))
-val_images_flat = val_images.reshape((val_images.shape[0], -1))
-test_images_flat = test_images.reshape((test_images.shape[0], -1))
+        return X_train, X_val, y_train, y_val
 
 
-### Train-Validation-Test
+class PneumoniaDetectorKNN:
+    """
+    This class defines the KNN model for pneumonia detection and provides methods for training and evaluation.
+    """
 
-# Train the model with train dataset
-model = KNeighborsClassifier(n_neighbors=5)
-model.fit(train_images_flat, train_labels)
+    def __init__(self, n_neighbors=5):
+        self.model = KNeighborsClassifier(n_neighbors=n_neighbors)
+        self.scaler = StandardScaler()
 
-# Evaluate the model with validation dataset
-val_predictions = model.predict(val_images_flat)
-val_accuracy = accuracy_score(val_labels, val_predictions)
-val_log_loss = log_loss(val_labels, val_predictions)
-print(f'Validation Accuracy: {val_accuracy}')
-print(f'Validation Log Loss: {val_log_loss}')
+    def train(self, X_train, y_train):
+        """
+        Train the KNN model using the training dataset.
+        """
+        X_train = self.scaler.fit_transform(X_train)
+        self.model.fit(X_train, y_train)
 
-# Test the model with test dataset
-test_predictions = model.predict(test_images_flat)
-test_accuracy = accuracy_score(test_labels, test_predictions)
-test_log_loss = log_loss(test_labels, test_predictions)
-print(f'Test Accuracy: {test_accuracy}')
-print(f'Test Log Loss: {test_log_loss}')
+    def evaluate(self, X_val, y_val):
+        """
+        Evaluate the model using the validation dataset.
+        """
+        X_val = self.scaler.transform(X_val)
+        y_pred = self.model.predict(X_val)
+        accuracy = accuracy_score(y_val, y_pred)
+        report = classification_report(y_val, y_pred, target_names=['NORMAL', 'PNEUMONIA'])
+        cm = confusion_matrix(y_val, y_pred)
+        return accuracy, report, cm
 
 
-###  Cross Validation 
-kf = KFold(n_splits=5)
-fold_results = []
+if __name__ == "__main__":
+    data_directory = 'datasets'
+    image_size = (64, 64)  # Smaller images for KNN
+    num_neighbors = 5
 
-for train_index, val_index in kf.split(train_images_flat):
-    x_train, x_val = train_images_flat[train_index], train_images_flat[val_index]
-    y_train, y_val = train_labels[train_index], train_labels[val_index]
-    
-    # Create and train the KNN model
-    knn = KNeighborsClassifier(n_neighbors=5)
-    knn.fit(x_train, y_train)
-    
-    #### Evaluate the modele
-    
-    # Predict lables for validation data
-    y_val_pred = knn.predict(x_val)
-    # Predictive probabilities of classes for validation data
-    y_val_proba = knn.predict_proba(x_val)[:, 1]
-    # Compare predicted labels y_val_pred with actual labels y_val
-    val_acc = accuracy_score(y_val, y_val_pred)
-    # Calculate log-loss (or log-loss) for model predictions on validation data.
-    val_loss = log_loss(y_val, y_val_proba)
-    
-    # Store the results of each cross-validation iteration in a list
-    fold_results.append((val_loss, val_acc))
-    print(f'Validation accuracy: {val_acc}, Validation loss: {val_loss}')
+    # Initialize data handlers
+    data_handler = DataHandler(data_directory, image_size)
 
-# Average cross-validation results
-avg_val_loss = np.mean([result[0] for result in fold_results])
-avg_val_acc = np.mean([result[1] for result in fold_results])
-print(f'Average validation accuracy (KFold): {avg_val_acc}, Average validation loss (KFold): {avg_val_loss}')
+    # Print image statistics
+    print(f"Total images: {data_handler.image_stats['total_images']}")
+    print(f"Filtered images: {data_handler.image_stats['filtered_images']}")
+    print(f"Min image size: {data_handler.image_stats['min_size']}")
+    print(f"Max image size: {data_handler.image_stats['max_size']}")
+    print(f"Average image width: {data_handler.image_stats['avg_width']}")
+    print(f"Average image height: {data_handler.image_stats['avg_height']}")
 
-###  Compare with a simple train-test split
-x_train, x_val, y_train, y_val = train_test_split(train_images_flat, train_labels, test_size=0.2, random_state=42)
+    # Print dataset shapes
+    print(f"Training set shape: {data_handler.X_train.shape}, Validation set shape: {data_handler.X_val.shape}")
 
-knn = KNeighborsClassifier(n_neighbors=5)
-knn.fit(x_train, y_train)
+    # Initialize the model
+    detector = PneumoniaDetectorKNN(n_neighbors=num_neighbors)
 
-y_val_pred = knn.predict(x_val)
-y_val_proba = knn.predict_proba(x_val)[:, 1]
-val_acc = accuracy_score(y_val, y_val_pred)
-val_loss = log_loss(y_val, y_val_proba)
-print(f'Simple train-test split validation accuracy: {val_acc}, validation loss: {val_loss}')
+    # Train the model
+    detector.train(data_handler.X_train, data_handler.y_train)
 
-# Final evaluation on the test game
-val_images, val_labels = dataset_to_numpy(validation_dataset)
-val_images_flat = val_images.reshape((val_images.shape[0], -1))
-y_val_pred = knn.predict(val_images_flat)
-y_val_proba = knn.predict_proba(val_images_flat)[:, 1]
-val_acc = accuracy_score(val_labels, y_val_pred)
-val_loss = log_loss(val_labels, y_val_proba)
-print(f'Test accuracy: {val_acc}, Test loss: {val_loss}')
+    # Evaluate the model
+    accuracy, report, cm = detector.evaluate(data_handler.X_val, data_handler.y_val)
+    print(f'Validation accuracy: {accuracy * 100:.2f}%')
+    print(report)
+    print("Confusion Matrix:")
+    print(cm)
+
+    # Save the results to a file
+    results = {
+        "accuracy": accuracy,
+        "classification_report": report,
+        "confusion_matrix": cm.tolist()
+    }
+    with open('knn_results.json', 'w') as f:
+        json.dump(results, f)

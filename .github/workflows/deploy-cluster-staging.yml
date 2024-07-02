@@ -22,7 +22,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run KNN model script
-        run: python knn_leo.py
+        run: python knn.py
 
       - name: Run CNN model script
         run: python cnn.py
