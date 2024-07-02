@@ -61,6 +61,9 @@ from sklearn.metrics import confusion_matrix, roc_auc_score, roc_curve, Confusio
 with open("knn_results.json", "r") as file:
     knn_results = json.load(file)
 
+# Convertir la matrice de confusion en tableau NumPy
+cm = np.array(knn_results['confusion_matrix'])
+
 def plot_roc_curve(fpr, tpr, roc_auc):
     plt.figure()
     plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
@@ -105,6 +108,9 @@ from sklearn.metrics import confusion_matrix, roc_auc_score, roc_curve, Confusio
 # Chargement des résultats
 with open("cnn_results.json", "r") as file:
     cnn_results = json.load(file)
+
+# Convertir la matrice de confusion en tableau NumPy
+cm = np.array(cnn_results['confusion_matrix'])
 
 def plot_roc_curve(fpr, tpr, roc_auc):
     plt.figure()
