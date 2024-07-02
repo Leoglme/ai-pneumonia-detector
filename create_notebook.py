@@ -13,14 +13,19 @@ h1 {color: navy;}
 # Code pour charger les résultats, afficher les détails, et générer des graphiques
 code = """
 import json
+import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, roc_auc_score, roc_curve, ConfusionMatrixDisplay
+import numpy as np
 
 # Chargement des résultats
 with open("knn_results.json", "r") as file:
     knn_results = json.load(file)
 with open("cnn_results.json", "r") as file:
     cnn_results = json.load(file)
+
+# Convertir la matrice de confusion en tableau NumPy
+cm = np.array(knn_results['confusion_matrix'])
 
 # Affichage des résultats KNN
 print("## Résultats du modèle KNN\\n- Précision: {}".format(knn_results['accuracy']))
@@ -63,7 +68,7 @@ def plot_confusion_matrix(cm):
 plot_roc_curve(knn_results['fpr'], knn_results['tpr'], knn_results['roc_auc'])
 
 # Plot Confusion Matrix
-plot_confusion_matrix(knn_results['confusion_matrix'])
+plot_confusion_matrix(cm)
 """
 
 n.cells.append(nbf.v4.new_code_cell(code))
