@@ -130,10 +130,19 @@ class PneumoniaDetector:
         Evaluate the model using the test data generator.
         """
         loss, accuracy = self.model.evaluate(test_ds, steps=test_steps)
-        y_true = np.concatenate([y for x, y in test_ds.take(test_steps)], axis=0)
-        y_pred = self.model.predict(test_ds.take(test_steps))
-        y_pred = np.where(y_pred >= 0.5, 1, 0)
-        y_proba = self.model.predict(test_ds.take(test_steps))
+        y_true = []
+        y_pred = []
+        y_proba = []
+
+        for x, y in test_ds.take(test_steps):
+            y_true.extend(y.numpy())
+            preds = self.model.predict(x)
+            y_pred.extend(np.where(preds >= 0.5, 1, 0))
+            y_proba.extend(preds)
+
+        y_true = np.array(y_true)
+        y_pred = np.array(y_pred).flatten()
+        y_proba = np.array(y_proba).flatten()
 
         cm = confusion_matrix(y_true, y_pred)
         roc_auc = roc_auc_score(y_true, y_proba)
@@ -176,10 +185,10 @@ if __name__ == "__main__":
     data_directory = 'datasets'
     image_size = (256, 256)
     batch_size = 32
-    num_epochs = 2 #10
-    steps_per_epoch = 2 #50
-    validation_steps = 2 #50
-    test_steps = 2 #50
+    num_epochs = 10  # 10
+    steps_per_epoch = 50  # 50
+    validation_steps = 50  # 50
+    test_steps = 50  # 50
 
     # Initialize data handlers
     data_handler = DataHandler(data_directory, image_size, batch_size)
