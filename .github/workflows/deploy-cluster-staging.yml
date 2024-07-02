@@ -35,6 +35,11 @@ jobs:
           jupyter nbconvert --to notebook --execute ai_model_notebook.ipynb --no-input --output executed_notebook.ipynb
           jupyter nbconvert --to html executed_notebook.ipynb --no-input --output index.html
 
+      - name: Upload Notebook as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-results-notebook
+
       - name: Upload HTML as artifact
         uses: actions/upload-artifact@v4
         with:
