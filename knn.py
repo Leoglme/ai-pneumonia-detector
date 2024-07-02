@@ -1,11 +1,13 @@
 import pandas as pd
 from utils.image_utils import ImageUtils
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, roc_auc_score, roc_curve, \
+    ConfusionMatrixDisplay
 from sklearn.preprocessing import StandardScaler
 import numpy as np
 from PIL import Image
 import json
+import matplotlib.pyplot as plt
 
 
 class DataHandler:
@@ -43,7 +45,7 @@ class DataHandler:
             img_array = np.array(img)
             # Ensure the image is 3 channels
             if img_array.ndim == 2:
-                img_array = np.stack((img_array,)*3, axis=-1)
+                img_array = np.stack((img_array,) * 3, axis=-1)
             elif img_array.shape[2] == 1:
                 img_array = np.concatenate((img_array, img_array, img_array), axis=-1)
             return img_array.flatten() / 255.0
@@ -83,10 +85,39 @@ class PneumoniaDetectorKNN:
         """
         X_val = self.scaler.transform(X_val)
         y_pred = self.model.predict(X_val)
+        y_proba = self.model.predict_proba(X_val)[:, 1]
+
         accuracy = accuracy_score(y_val, y_pred)
         report = classification_report(y_val, y_pred, target_names=['NORMAL', 'PNEUMONIA'])
         cm = confusion_matrix(y_val, y_pred)
-        return accuracy, report, cm
+        roc_auc = roc_auc_score(y_val, y_proba)
+        fpr, tpr, thresholds = roc_curve(y_val, y_proba)
+
+        return accuracy, report, cm, roc_auc, fpr, tpr, thresholds
+
+    def plot_roc_curve(self, fpr, tpr, roc_auc):
+        """
+        Plot the ROC curve.
+        """
+        plt.figure()
+        plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
+        plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('Receiver Operating Characteristic (ROC) Curve')
+        plt.legend(loc="lower right")
+        plt.show()
+
+    def plot_confusion_matrix(self, cm):
+        """
+        Plot the confusion matrix.
+        """
+        disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=['NORMAL', 'PNEUMONIA'])
+        disp.plot(cmap=plt.cm.Blues)
+        plt.title('Confusion Matrix')
+        plt.show()
 
 
 if __name__ == "__main__":
@@ -115,17 +146,27 @@ if __name__ == "__main__":
     detector.train(data_handler.X_train, data_handler.y_train)
 
     # Evaluate the model
-    accuracy, report, cm = detector.evaluate(data_handler.X_val, data_handler.y_val)
+    accuracy, report, cm, roc_auc, fpr, tpr, thresholds = detector.evaluate(data_handler.X_val, data_handler.y_val)
     print(f'Validation accuracy: {accuracy * 100:.2f}%')
     print(report)
     print("Confusion Matrix:")
     print(cm)
+    print(f'ROC AUC Score: {roc_auc}')
 
     # Save the results to a file
     results = {
         "accuracy": accuracy,
         "classification_report": report,
-        "confusion_matrix": cm.tolist()
+        "confusion_matrix": cm.tolist(),
+        "roc_auc": roc_auc,
+        "fpr": fpr.tolist(),
+        "tpr": tpr.tolist()
     }
     with open('knn_results.json', 'w') as f:
         json.dump(results, f)
+
+    # Plot ROC curve
+    detector.plot_roc_curve(fpr, tpr, roc_auc)
+
+    # Plot Confusion Matrix
+    detector.plot_confusion_matrix(cm)
