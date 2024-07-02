@@ -13,9 +13,7 @@ h1 {color: navy;}
 # Code pour charger les résultats, afficher les détails, et générer des graphiques
 code = """
 import json
-import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix, roc_auc_score, roc_curve, ConfusionMatrixDisplay
 import numpy as np
 
 # Chargement des résultats
@@ -23,9 +21,6 @@ with open("knn_results.json", "r") as file:
     knn_results = json.load(file)
 with open("cnn_results.json", "r") as file:
     cnn_results = json.load(file)
-
-# Convertir la matrice de confusion en tableau NumPy
-cm = np.array(knn_results['confusion_matrix'])
 
 # Affichage des résultats KNN
 print("## Résultats du modèle KNN\\n- Précision: {}".format(knn_results['accuracy']))
@@ -45,6 +40,26 @@ plt.bar(labels, accuracy, color=['blue', 'green'])
 plt.title('Comparaison de la précision')
 plt.ylabel('Précision')
 plt.show()
+"""
+n.cells.append(nbf.v4.new_code_cell(code))
+
+n.cells.append(nbf.v4.new_markdown_cell("""
+# Graphique KNN
+<style>
+h1 {color: navy;}
+</style>
+"""))
+
+# Graph KNN
+code2 = """
+import json
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix, roc_auc_score, roc_curve, ConfusionMatrixDisplay
+
+# Chargement des résultats
+with open("knn_results.json", "r") as file:
+    knn_results = json.load(file)
 
 def plot_roc_curve(fpr, tpr, roc_auc):
     plt.figure()
@@ -71,7 +86,52 @@ plot_roc_curve(knn_results['fpr'], knn_results['tpr'], knn_results['roc_auc'])
 plot_confusion_matrix(cm)
 """
 
-n.cells.append(nbf.v4.new_code_cell(code))
+n.cells.append(nbf.v4.new_code_cell(code2))
+
+n.cells.append(nbf.v4.new_markdown_cell("""
+# Graphique CNN
+<style>
+h1 {color: navy;}
+</style>
+"""))
+
+# Graph KNN
+code3 = """
+import json
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix, roc_auc_score, roc_curve, ConfusionMatrixDisplay
+
+# Chargement des résultats
+with open("cnn_results.json", "r") as file:
+    cnn_results = json.load(file)
+
+def plot_roc_curve(fpr, tpr, roc_auc):
+    plt.figure()
+    plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
+    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver Operating Characteristic (ROC) Curve')
+    plt.legend(loc="lower right")
+    plt.show()
+
+def plot_confusion_matrix(cm):
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=['NORMAL', 'PNEUMONIA'])
+    disp.plot(cmap=plt.cm.Blues)
+    plt.title('Confusion Matrix')
+    plt.show()
+
+# Plot ROC curve
+plot_roc_curve(cnn_results['fpr'], cnn_results['tpr'], cnn_results['roc_auc'])
+
+# Plot Confusion Matrix
+plot_confusion_matrix(cm)
+"""
+
+n.cells.append(nbf.v4.new_code_cell(code3))
 
 # Conclusion avec mise en forme
 n.cells.append(nbf.v4.new_markdown_cell("""
