@@ -6,3 +6,4 @@ jupyter
 nbconvert
 nbformat
 matplotlib
+numpy

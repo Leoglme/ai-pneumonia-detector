@@ -1,12 +1,16 @@
 import os
 import pandas as pd
 from utils.image_utils import ImageUtils
-import tensorflow as tf
 import json
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, roc_auc_score, roc_curve
+import matplotlib.pyplot as plt
+import numpy as np
 
 # Disable oneDNN optimizations
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress TensorFlow warnings
+
+import tensorflow as tf
 
 
 class DataHandler:
@@ -126,7 +130,40 @@ class PneumoniaDetector:
         Evaluate the model using the test data generator.
         """
         loss, accuracy = self.model.evaluate(test_ds, steps=test_steps)
-        return loss, accuracy
+        y_true = np.concatenate([y for x, y in test_ds.take(test_steps)], axis=0)
+        y_pred = self.model.predict(test_ds.take(test_steps))
+        y_pred = np.where(y_pred >= 0.5, 1, 0)
+        y_proba = self.model.predict(test_ds.take(test_steps))
+
+        cm = confusion_matrix(y_true, y_pred)
+        roc_auc = roc_auc_score(y_true, y_proba)
+        fpr, tpr, _ = roc_curve(y_true, y_proba)
+
+        return loss, accuracy, cm, roc_auc, fpr, tpr
+
+    def plot_roc_curve(self, fpr, tpr, roc_auc):
+        """
+        Plot the ROC curve.
+        """
+        plt.figure()
+        plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
+        plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('Receiver Operating Characteristic (ROC) Curve')
+        plt.legend(loc="lower right")
+        plt.show()
+
+    def plot_confusion_matrix(self, cm):
+        """
+        Plot the confusion matrix.
+        """
+        disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=['NORMAL', 'PNEUMONIA'])
+        disp.plot(cmap=plt.cm.Blues)
+        plt.title('Confusion Matrix')
+        plt.show()
 
     def load_model(self, model_path):
         """
@@ -166,13 +203,26 @@ if __name__ == "__main__":
     history = detector.train(train_ds, val_ds, num_epochs, steps_per_epoch, validation_steps)
 
     # Evaluate the model
-    test_loss, test_acc = detector.evaluate(val_ds, test_steps)
+    test_loss, test_acc, cm, roc_auc, fpr, tpr = detector.evaluate(val_ds, test_steps)
     print(f'Test accuracy: {test_acc * 100:.2f}%')
+    print(f'ROC AUC Score: {roc_auc}')
+    print("Confusion Matrix:")
+    print(cm)
 
     # Save the results to a file
     results = {
         "test_loss": test_loss,
-        "test_accuracy": test_acc
+        "test_accuracy": test_acc,
+        "roc_auc": roc_auc,
+        "confusion_matrix": cm.tolist(),
+        "fpr": fpr.tolist(),
+        "tpr": tpr.tolist()
     }
     with open('cnn_results.json', 'w') as f:
         json.dump(results, f)
+
+    # Plot ROC curve
+    detector.plot_roc_curve(fpr, tpr, roc_auc)
+
+    # Plot Confusion Matrix
+    detector.plot_confusion_matrix(cm)
