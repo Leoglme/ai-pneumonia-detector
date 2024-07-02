@@ -60,10 +60,10 @@ def plot_confusion_matrix(self, cm):
     plt.show()
 
 # Plot ROC curve
-detector.plot_roc_curve(knn_results['fpr'], knn_results['tpr'], knn_results['roc_auc'])
+plot_roc_curve(knn_results['fpr'], knn_results['tpr'], knn_results['roc_auc'])
 
 # Plot Confusion Matrix
-detector.plot_confusion_matrix(knn_results['confusion_matrix'])
+plot_confusion_matrix(knn_results['confusion_matrix'])
 """
 
 n.cells.append(nbf.v4.new_code_cell(code))
