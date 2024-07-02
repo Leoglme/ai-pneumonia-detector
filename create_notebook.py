@@ -42,9 +42,6 @@ plt.ylabel('Précision')
 plt.show()
 
 def plot_roc_curve(self, fpr, tpr, roc_auc):
-    """
-    Plot the ROC curve.
-    """
     plt.figure()
     plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
     plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
@@ -57,9 +54,6 @@ def plot_roc_curve(self, fpr, tpr, roc_auc):
     plt.show()
 
 def plot_confusion_matrix(self, cm):
-    """
-    Plot the confusion matrix.
-    """
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=['NORMAL', 'PNEUMONIA'])
     disp.plot(cmap=plt.cm.Blues)
     plt.title('Confusion Matrix')
