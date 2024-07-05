@@ -12,9 +12,9 @@ def load_data (directory, batch_size=32, label_mode='binary'):
         label_mode=label_mode
     )
 
-train_dataset = load_data('chest_Xray/train')    
-validation_dataset = load_data('chest_Xray/val') 
-test_dataset = load_data('chest_Xray/test')   
+train_dataset = load_data('datasets/train')    
+validation_dataset = load_data('datasets/val') 
+test_dataset = load_data('datasets/test')   
 
 
 # Function to convert dataset into numpy arrays, normalize, resize and flatten images
@@ -55,7 +55,7 @@ print(f'Test dataset - Average size: {test_avg_size}, Min size: {test_min_size},
 
 # Train the model with train dataset
 model = KNeighborsClassifier(n_neighbors=5)
-model.fit(train_images, train_labels)
+model.fit(train_images, train_labels.ravel())
 
 # Evaluate the model with validation dataset
 val_predictions = model.predict(val_images)
@@ -82,7 +82,7 @@ for train_index, val_index in kf.split(train_images):
     
     # Create and train the KNN model
     knn = KNeighborsClassifier(n_neighbors=5)
-    knn.fit(x_train, y_train)
+    knn.fit(x_train, y_train.ravel())
     
     #### Evaluate the modele
     
@@ -108,7 +108,7 @@ print(f'Average validation accuracy (KFold): {avg_val_acc}, Average validation l
 x_train, x_val, y_train, y_val = train_test_split(train_images, train_labels, test_size=0.2, random_state=42)
 
 knn = KNeighborsClassifier(n_neighbors=5)
-knn.fit(x_train, y_train)
+knn.fit(x_train, y_train.ravel())
 
 y_val_pred = knn.predict(x_val)
 y_val_proba = knn.predict_proba(x_val)[:, 1]
