@@ -2,20 +2,23 @@ import nbformat as nbf
 
 n = nbf.v4.new_notebook()
 
-# Introduction avec un style personnalisé
+# Titre principal
 n.cells.append(nbf.v4.new_markdown_cell("""
+# Zoidberg
+
 ## Introduction
 
 Ce projet vise à comparer deux approches de machine learning - les réseaux de neurones convolutifs (CNN) et les K-Nearest Neighbors (KNN) - pour détecter la pneumonie à partir d'images de radiographie. Nous évaluerons ces modèles en fonction de leur précision, de leur perte, et d'autres métriques pertinentes, incluant les faux négatifs, faux positifs, et des graphiques tels que la matrice de confusion et la courbe ROC.
 
 <style>
 h1 {color: navy;}
+h2 {color: navy;}
 </style>
 """))
 
 # Structure du Dataset
 n.cells.append(nbf.v4.new_markdown_cell("""
-### Structure du Dataset
+## Structure du Dataset
 
 Le dataset se compose de trois dossiers principaux :
 - **train** : utilisé pour l'entraînement des modèles
@@ -29,7 +32,7 @@ Chaque dossier contient deux sous-dossiers :
 
 # Explication de la classe ImageUtils
 n.cells.append(nbf.v4.new_markdown_cell("""
-### Filtrage des images avec ImageUtils
+## Filtrage des images avec ImageUtils
 
 La classe `ImageUtils` est utilisée pour filtrer les images de radiographie afin de s'assurer qu'elles respectent certaines dimensions minimales. Voici comment elle fonctionne :
 
@@ -91,42 +94,9 @@ class ImageUtils:
 ```
 """))
 
-# Ajout du code pour charger les résultats, afficher les détails, et générer des graphiques
-code = """
-import json
-import matplotlib.pyplot as plt
-import numpy as np
-
-# Chargement des résultats
-with open("knn_results.json", "r") as file:
-    knn_results = json.load(file)
-with open("cnn_results.json", "r") as file:
-    cnn_results = json.load(file)
-
-# Affichage des résultats KNN
-print("## Résultats du modèle KNN\\n- Précision: {}".format(knn_results['accuracy']))
-print("- Rapport de classification:\\n{}".format(knn_results['classification_report']))
-
-# Affichage des résultats CNN
-print("\\n## Résultats du modèle CNN\\n- Précision de test: {}".format(cnn_results['test_accuracy']))
-print("- Perte de test: {}".format(cnn_results['test_loss']))
-
-# Données pour la comparaison
-labels = ['KNN', 'CNN']
-accuracy = [knn_results['accuracy'], cnn_results['test_accuracy']]
-
-# Création des graphiques
-plt.figure(figsize=(8, 6))
-plt.bar(labels, accuracy, color=['blue', 'green'])
-plt.title('Comparaison de la précision')
-plt.ylabel('Précision')
-plt.show()
-"""
-n.cells.append(nbf.v4.new_code_cell(code))
-
-# Explication du modèle KNN
+# Explication du modèle KNN et utilisation de ImageUtils
 n.cells.append(nbf.v4.new_markdown_cell("""
-### Modèle KNN
+## Modèle KNN
 
 Le modèle KNN (K-Nearest Neighbors) est un modèle de machine learning simple mais efficace pour la classification. Voici comment il est construit et utilisé dans ce projet :
 
@@ -134,14 +104,44 @@ Le modèle KNN (K-Nearest Neighbors) est un modèle de machine learning simple m
 2. **Création du dataset** : Les images sont transformées en vecteurs et divisées en ensembles d'entraînement et de validation.
 3. **Entraînement** : Le modèle KNN est entraîné sur les images d'entraînement.
 4. **Évaluation** : Le modèle est évalué sur les images de validation pour calculer la précision et d'autres métriques.
+
+### Prétraitement et création du dataset avec ImageUtils
+
+Pour le modèle KNN, nous utilisons la classe `ImageUtils` pour filtrer et prétraiter les images de notre dataset. Nous choisissons une taille d'image plus petite (64x64) pour réduire la complexité computationnelle :
+
+```python
+data_handler = DataHandler(data_directory, image_size=(64, 64))
+file_paths, image_stats = ImageUtils.filter_images(data_directory, img_size=(64, 64))
+train_df, val_df = data_handler._create_dataframe(file_paths)
+X_train, X_val, y_train, y_val = data_handler._create_datasets()
+```
 """))
+
+# Affichage des résultats KNN
+n.cells.append(nbf.v4.new_markdown_cell("""
+## Résultats du modèle KNN
+"""))
+
+# Code pour afficher les résultats KNN
+code_knn_results = """
+import json
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Chargement des résultats KNN
+with open("knn_results.json", "r") as file:
+    knn_results = json.load(file)
+
+# Affichage des résultats KNN
+print("## Résultats du modèle KNN\\n- Précision: {}".format(knn_results['accuracy']))
+print("- Rapport de classification:\\n{}".format(knn_results['classification_report']))
+"""
+
+n.cells.append(nbf.v4.new_code_cell(code_knn_results))
 
 # Graphique KNN
 n.cells.append(nbf.v4.new_markdown_cell("""
-# Graphique KNN
-<style>
-h1 {color: navy;}
-</style>
+### Graphique KNN
 """))
 
 code2 = """
@@ -183,9 +183,9 @@ plot_confusion_matrix(cm)
 """
 n.cells.append(nbf.v4.new_code_cell(code2))
 
-# Explication du modèle CNN
+# Explication du modèle CNN et utilisation de ImageUtils
 n.cells.append(nbf.v4.new_markdown_cell("""
-### Modèle CNN
+## Modèle CNN
 
 Le modèle CNN (Convolutional Neural Network) est un modèle de machine learning puissant pour la classification d'images. Voici comment il est construit et utilisé dans ce projet :
 
@@ -193,14 +193,47 @@ Le modèle CNN (Convolutional Neural Network) est un modèle de machine learning
 2. **Création du dataset** : Les images sont transformées en vecteurs et divisées en ensembles d'entraînement et de validation.
 3. **Entraînement** : Le modèle CNN est construit avec plusieurs couches de convolution, de pooling et de couches denses.
 4. **Évaluation** : Le modèle est évalué sur les images de validation pour calculer la précision et d'autres métriques.
+
+### Prétraitement et création du dataset avec ImageUtils
+
+Pour le modèle CNN, nous utilisons également la classe `ImageUtils` pour filtrer et prétraiter les images, mais avec une taille d'image plus grande (256x256) pour exploiter pleinement la capacité du modèle CNN :
+
+```python
+data_handler = DataHandler(data_directory, image_size=(256, 256))
+file_paths, image_stats = ImageUtils.filter_images(data_directory, img_size=(256, 256))
+train_df, val_df = data_handler._create_dataframe(file_paths)
+train_ds = data_handler.get_dataset(data_handler.train_generator)
+val_ds = data_handler.get_dataset(data_handler.validation_generator)
+```
 """))
+
+# Affichage des résultats CNN
+n.cells.append(nbf.v4.new_markdown_cell("""
+## Résult
+
+ats du modèle CNN
+"""))
+
+# Code pour afficher les résultats CNN
+code_cnn_results = """
+import json
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Chargement des résultats CNN
+with open("cnn_results.json", "r") as file:
+    cnn_results = json.load(file)
+
+# Affichage des résultats CNN
+print("## Résultats du modèle CNN\\n- Précision de test: {}".format(cnn_results['test_accuracy']))
+print("- Perte de test: {}".format(cnn_results['test_loss']))
+"""
+
+n.cells.append(nbf.v4.new_code_cell(code_cnn_results))
 
 # Graphique CNN
 n.cells.append(nbf.v4.new_markdown_cell("""
-# Graphique CNN
-<style>
-h1 {color: navy;}
-</style>
+### Graphique CNN
 """))
 
 code3 = """
@@ -219,9 +252,7 @@ cm = np.array(cnn_results['confusion_matrix'])
 def plot_roc_curve(fpr, tpr, roc_auc):
     plt.figure()
     plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
-    plt.plot([0, 1
-
-], [0, 1], color='navy', lw=2, linestyle='--')
+    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
@@ -244,13 +275,44 @@ plot_confusion_matrix(cm)
 """
 n.cells.append(nbf.v4.new_code_cell(code3))
 
+# Comparaison de la précision
+n.cells.append(nbf.v4.new_markdown_cell("""
+## Comparaison de la précision
+"""))
+
+code_comparaison_precision = """
+# Comparaison des résultats
+labels = ['KNN', 'CNN']
+accuracy = [knn_results['accuracy'], cnn_results['test_accuracy']]
+
+# Création des graphiques
+plt.figure(figsize=(8, 6))
+plt.bar(labels, accuracy, color=['blue', 'green'])
+plt.title('Comparaison de la précision')
+plt.ylabel('Précision')
+plt.show()
+"""
+
+n.cells.append(nbf.v4.new_code_cell(code_comparaison_precision))
+
 # Conclusion
 n.cells.append(nbf.v4.new_markdown_cell("""
 ## Conclusion
 
-En comparant les deux modèles, nous observons que les deux approches ont des performances solides pour la détection de la pneumonie à partir d'images de radiographie. 
+En comparant les deux modèles, nous observons que :
 
-Le modèle CNN montre une meilleure précision et un score AUC ROC plus élevé, ce qui indique une meilleure capacité à distinguer entre les cas de pneumonie et les cas normaux. Cependant, le modèle KNN reste une option valide et plus simple à implémenter.
+- Le modèle CNN montre une meilleure précision et un score AUC ROC plus élevé.
+- Le modèle KNN reste une option valide et plus simple à implémenter.
+
+### Recommandations
+
+- **Modèle CNN** :
+  - Plus fiable et précis pour la détection de la pneumonie.
+  - Peut encore être amélioré avec un entraînement plus long.
+
+- **Modèle KNN** :
+  - Option simple et rapide à implémenter.
+  - Utile dans des scénarios avec des ressources informatiques limitées.
 
 Pour des applications nécessitant une haute précision et la capacité de traiter de grands ensembles de données avec des images complexes, le modèle CNN est recommandé. En revanche, pour des scénarios où les ressources informatiques sont limitées et une implémentation rapide est nécessaire, le modèle KNN peut être plus approprié.
 """))
