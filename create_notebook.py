@@ -34,7 +34,7 @@ Chaque dossier contient deux sous-dossiers :
 n.cells.append(nbf.v4.new_markdown_cell("""
 ## Filtrage des images avec ImageUtils
 
-La classe `ImageUtils` est utilisée pour filtrer les images de radiographie afin de s'assurer qu'elles respectent certaines dimensions minimales. Voici comment elle fonctionne :
+La classe ImageUtils est utilisée pour filtrer les images de radiographie afin de s'assurer qu'elles respectent certaines dimensions minimales. Elle permet aussi de récupérer des informations sur le contenu du dataset, comme par exemple le nombre total d'images, les tailles minimales et maximales, les largeurs et hauteurs moyennes, ainsi que le nombre d'images filtrées. Voici comment elle fonctionne :
 
 ```python
 class ImageUtils:
@@ -100,11 +100,6 @@ n.cells.append(nbf.v4.new_markdown_cell("""
 
 Le modèle KNN (K-Nearest Neighbors) est un modèle de machine learning simple mais efficace pour la classification. Voici comment il est construit et utilisé dans ce projet :
 
-1. **Prétraitement des images** : Les images sont redimensionnées et normalisées.
-2. **Création du dataset** : Les images sont transformées en vecteurs et divisées en ensembles d'entraînement et de validation.
-3. **Entraînement** : Le modèle KNN est entraîné sur les images d'entraînement.
-4. **Évaluation** : Le modèle est évalué sur les images de validation pour calculer la précision et d'autres métriques.
-
 ### Prétraitement et création du dataset avec ImageUtils
 
 Pour le modèle KNN, nous utilisons la classe `ImageUtils` pour filtrer et prétraiter les images de notre dataset. Nous choisissons une taille d'image plus petite (64x64) pour réduire la complexité computationnelle :
@@ -114,6 +109,41 @@ data_handler = DataHandler(data_directory, image_size=(64, 64))
 file_paths, image_stats = ImageUtils.filter_images(data_directory, img_size=(64, 64))
 train_df, val_df = data_handler._create_dataframe(file_paths)
 X_train, X_val, y_train, y_val = data_handler._create_datasets()
+```
+
+### Construction du modèle KNN
+
+Le modèle KNN est construit en utilisant la bibliothèque `scikit-learn`. Voici les étapes de construction :
+
+1. **Chargement et Prétraitement des Images** :
+
+```python
+X_train = np.array([self._load_image(fp) for fp in self.train_df['filepath']])
+y_train = np.array([1 if label == 'PNEUMONIA' else 0 for label in self.train_df['class']])
+
+X_val = np.array([self._load_image(fp) for fp in self.val_df['filepath']])
+y_val = np.array([1 if label == 'PNEUMONIA' else 0 for label in self.val_df['class']])
+```
+
+2. **Entraînement du modèle** :
+
+```python
+self.model = KNeighborsClassifier(n_neighbors=n_neighbors)
+self.scaler = StandardScaler()
+X_train = self.scaler.fit_transform(X_train)
+self.model.fit(X_train, y_train)
+```
+
+3. **Évaluation du modèle** :
+
+```python
+X_val = self.scaler.transform(X_val)
+y_pred = self.model.predict(X_val)
+accuracy = accuracy_score(y_val, y_pred)
+report = classification_report(y_val, y_pred, target_names=['NORMAL', 'PNEUMONIA'])
+cm = confusion_matrix(y_val, y_pred)
+roc_auc = roc_auc_score(y_val, y_proba)
+fpr, tpr, thresholds = roc_curve(y_val, y_proba)
 ```
 """))
 
@@ -189,14 +219,11 @@ n.cells.append(nbf.v4.new_markdown_cell("""
 
 Le modèle CNN (Convolutional Neural Network) est un modèle de machine learning puissant pour la classification d'images. Voici comment il est construit et utilisé dans ce projet :
 
-1. **Prétraitement des images** : Les images sont redimensionnées et normalisées.
-2. **Création du dataset** : Les images sont transformées en vecteurs et divisées en ensembles d'entraînement et de validation.
-3. **Entraînement** : Le modèle CNN est construit avec plusieurs couches de convolution, de pooling et de couches denses.
-4. **Évaluation** : Le modèle est évalué sur les images de validation pour calculer la précision et d'autres métriques.
-
 ### Prétraitement et création du dataset avec ImageUtils
 
-Pour le modèle CNN, nous utilisons également la classe `ImageUtils` pour filtrer et prétraiter les images, mais avec une taille d'image plus grande (256x256) pour exploiter pleinement la capacité du modèle CNN :
+Pour le modèle CNN, nous utilisons également la classe `ImageUtils` pour filtrer et prétraiter les images
+
+, mais avec une taille d'image plus grande (256x256) pour exploiter pleinement la capacité du modèle CNN :
 
 ```python
 data_handler = DataHandler(data_directory, image_size=(256, 256))
@@ -204,6 +231,67 @@ file_paths, image_stats = ImageUtils.filter_images(data_directory, img_size=(256
 train_df, val_df = data_handler._create_dataframe(file_paths)
 train_ds = data_handler.get_dataset(data_handler.train_generator)
 val_ds = data_handler.get_dataset(data_handler.validation_generator)
+```
+
+### Construction du modèle CNN
+
+Le modèle CNN est construit en utilisant la bibliothèque `TensorFlow`. Voici les étapes de construction :
+
+1. **Définition de l'architecture du modèle** :
+
+```python
+model = tf.keras.models.Sequential([
+    tf.keras.layers.Input(shape=input_shape),
+    tf.keras.layers.Conv2D(32, (3, 3), activation='relu'),
+    tf.keras.layers.MaxPooling2D((2, 2)),
+    tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
+    tf.keras.layers.MaxPooling2D((2, 2)),
+    tf.keras.layers.Conv2D(128, (3, 3), activation='relu'),
+    tf.keras.layers.MaxPooling2D((2, 2)),
+    tf.keras.layers.Conv2D(256, (3, 3), activation='relu'),
+    tf.keras.layers.MaxPooling2D((2, 2)),
+    tf.keras.layers.Flatten(),
+    tf.keras.layers.Dense(512, activation='relu'),
+    tf.keras.layers.Dropout(0.5),
+    tf.keras.layers.Dense(1, activation='sigmoid')
+])
+model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), loss='binary_crossentropy', metrics=['accuracy'])
+```
+
+2. **Entraînement du modèle** :
+
+```python
+history = self.model.fit(
+    train_ds,
+    steps_per_epoch=train_steps,
+    epochs=epochs,
+    validation_data=val_ds,
+    validation_steps=val_steps
+)
+self.model.summary()
+```
+
+3. **Évaluation du modèle** :
+
+```python
+loss, accuracy = self.model.evaluate(test_ds, steps=test_steps)
+y_true = []
+y_pred = []
+y_proba = []
+
+for x, y in test_ds.take(test_steps):
+    y_true.extend(y.numpy())
+    preds = self.model.predict(x)
+    y_pred.extend(np.where(preds >= 0.5, 1, 0))
+    y_proba.extend(preds)
+
+y_true = np.array(y_true)
+y_pred = np.array(y_pred).flatten()
+y_proba = np.array(y_proba).flatten()
+
+cm = confusion_matrix(y_true, y_pred)
+roc_auc = roc_auc_score(y_true, y_proba)
+fpr, tpr, _ = roc_curve(y_true, y_proba)
 ```
 """))
 
