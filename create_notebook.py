@@ -209,9 +209,7 @@ val_ds = data_handler.get_dataset(data_handler.validation_generator)
 
 # Affichage des résultats CNN
 n.cells.append(nbf.v4.new_markdown_cell("""
-## Résult
-
-ats du modèle CNN
+## Résultats du modèle CNN
 """))
 
 # Code pour afficher les résultats CNN
