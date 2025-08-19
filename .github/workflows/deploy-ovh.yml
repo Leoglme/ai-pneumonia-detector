@@ -1,9 +1,9 @@
-name: deploy_cluster_staging
+name: deploy_ovh
 
 on:
   push:
     branches:
-      - staging
+      - develop
   workflow_dispatch:
 
 jobs:
