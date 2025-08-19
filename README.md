@@ -10,8 +10,7 @@
 <br /><br /><br /><br />
 
 ## 📚 WebSite
-- Production : https://zoiberg.crzcommon.com 
-- Staging : https://staging.zoiberg.crzcommon.com  
+- Production : https://ai-pneumonia-detector.dibodev.fr
 
 <br /><br /><br /><br />
 
@@ -57,23 +56,6 @@ cd ai-pneumonia-detector
 
 <br />
 
-### Configuration du Token d'Accès pour les fichiers LFS
-Configurez le token d'accès LFS avec votre jeton personnel, pour pouvoir fetch les fichiers LFS :
-```bash
-cd ai-pneumonia-detector
-git config lfs.https://gitea.crzcommon.com/crzgames/ai-pneumonia-detector.git/info/lfs.access token dd39e40af8323acc9aa3ee4fb6cee08fc75d497b
-```
-
-<br />
-
-### Identification lors du clone du projet pour s'identifier au près de gitea.crzcommon.com
-```bash
-Username: crzgames
-Password: Marylene59!!!!
-```
-
-<br />
-
 ### Install dependencies
 1. Python >= 3.12 (LTS latest) : https://www.python.org/downloads/
 2. Setup Tensorflow in CPU / GPU : https://www.tensorflow.org/install/pip?hl=fr#windows-wsl2
@@ -87,7 +69,9 @@ Password: Marylene59!!!!
 ## 🔄 Cycle Development
 1. Run project :
     ```bash
-    py main.py
+    py cnn.py
+    py knn.py
+    py create_notebook.py
     ```
 2. If there is a problem because of dependencies : 
     ```bash
