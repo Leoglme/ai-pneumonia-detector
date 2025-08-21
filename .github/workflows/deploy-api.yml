@@ -31,7 +31,7 @@ jobs:
           sparse-checkout: |
             api
             requirements.txt
-          sparse-checkout-cone: false
+          sparse-checkout-cone: true
           lfs: false
 
       - name: 🧭 Debug workspace
@@ -39,6 +39,14 @@ jobs:
           pwd
           ls -la
           ls -la api || true
+          cat .git/info/sparse-checkout || true
+          find api -type f || true
+          test -f requirements.txt && echo "requirements.txt exists" || echo "requirements.txt missing"
+
+      - name: 🛠️ Create dummy file if api is empty
+        run: |
+          mkdir -p api
+          touch api/.gitkeep
 
       - name: 🧱 Ensure target structure (SSH)
         if: github.event_name == 'push'
@@ -51,24 +59,22 @@ jobs:
           script: |
             set -e
             TARGET_DIR="/var/www/api.ai-pneumonia-detector.dibodev.fr/html"
-            sudo mkdir -p "$TARGET_DIR"        # ✅ assure l'existence
+            sudo mkdir -p "$TARGET_DIR"
             sudo rm -rf "$TARGET_DIR/api"
             sudo mkdir -p "$TARGET_DIR/api"
-            sudo mkdir -p "$TARGET_DIR/.venv"  # venv dédié
+            sudo mkdir -p "$TARGET_DIR/.venv"
             sudo chown -R $USER:$USER "$TARGET_DIR"
 
       - name: 📤 Upload API sources (SCP)
         if: github.event_name == 'push'
-        uses: appleboy/scp-action@master
+        uses: appleboy/scp-action@v0.1.4
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           strip_components: 0
-          source: |
-            api/**
-            requirements.txt
+          source: "api,requirements.txt"
           target: /var/www/api.ai-pneumonia-detector.dibodev.fr/html
 
       - name: 🐍 Create/Update venv & install deps (SSH)
