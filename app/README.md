@@ -1,5 +1,5 @@
 # Nuxt Minimal Starter
-# https://chatgpt.com/c/68a3ca75-bb84-832f-b103-3f07676cea19
+# => https://chatgpt.com/c/68a3ca75-bb84-832f-b103-3f07676cea19
 
 Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
 
