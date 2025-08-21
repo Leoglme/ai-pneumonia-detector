@@ -50,7 +50,7 @@ jobs:
 
       - name: 🧱 Ensure target structure (SSH)
         if: github.event_name == 'push'
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
@@ -79,7 +79,7 @@ jobs:
 
       - name: 🐍 Create/Update venv & install deps (SSH)
         if: github.event_name == 'push'
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
@@ -89,8 +89,18 @@ jobs:
             set -e
             TARGET_DIR="/var/www/api.ai-pneumonia-detector.dibodev.fr/html"
             cd "$TARGET_DIR"
-            sudo apt-get update -y
+            # Add MySQL GPG key
+            sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys B7B3B788A8D3785C || true
+            # Remove Docker repository
+            if [ -f /etc/apt/sources.list.d/docker.list ]; then
+              sudo rm -f /etc/apt/sources.list.d/docker.list
+            fi
+            # Update APT with error tolerance
+            sudo apt-get update -y --allow-releaseinfo-change || true
             sudo apt-get install -y python3-venv
+            # Debug requirements.txt
+            ls -la requirements.txt || echo "requirements.txt missing"
+            # Create or update virtual environment
             if [ ! -x ".venv/bin/python" ]; then
               python3 -m venv .venv
             fi
@@ -101,7 +111,7 @@ jobs:
 
       - name: ⚙️ Configure/restart systemd service (SSH)
         if: github.event_name == 'push'
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
@@ -116,7 +126,6 @@ jobs:
             [Unit]
             Description=Pneumonia FastAPI (Uvicorn)
             After=network.target
-
             [Service]
             User=${DEPLOY_USER}
             WorkingDirectory=${TARGET_DIR}
@@ -125,7 +134,6 @@ jobs:
             Restart=always
             RestartSec=5
             KillSignal=SIGINT
-
             [Install]
             WantedBy=multi-user.target
             EOF
@@ -136,7 +144,7 @@ jobs:
 
       - name: 🔄 Test & reload Nginx (SSH)
         if: github.event_name == 'push'
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
