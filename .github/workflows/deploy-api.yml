@@ -28,14 +28,20 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
-          filter: 'blob:none'
           sparse-checkout: |
             api
             requirements.txt
-          sparse-checkout-cone: true
+          sparse-checkout-cone: false
           lfs: false
 
+      - name: 🧭 Debug workspace
+        run: |
+          pwd
+          ls -la
+          ls -la api || true
+
       - name: 🧱 Ensure target structure (SSH)
+        if: github.event_name == 'push'
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -45,14 +51,14 @@ jobs:
           script: |
             set -e
             TARGET_DIR="/var/www/api.ai-pneumonia-detector.dibodev.fr/html"
+            sudo mkdir -p "$TARGET_DIR"        # ✅ assure l'existence
             sudo rm -rf "$TARGET_DIR/api"
             sudo mkdir -p "$TARGET_DIR/api"
-            # venv dédié à l'API
-            sudo mkdir -p "$TARGET_DIR/.venv"
-            # droits (adapte si tu préfères www-data)
+            sudo mkdir -p "$TARGET_DIR/.venv"  # venv dédié
             sudo chown -R $USER:$USER "$TARGET_DIR"
 
       - name: 📤 Upload API sources (SCP)
+        if: github.event_name == 'push'
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -66,6 +72,7 @@ jobs:
           target: /var/www/api.ai-pneumonia-detector.dibodev.fr/html
 
       - name: 🐍 Create/Update venv & install deps (SSH)
+        if: github.event_name == 'push'
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -83,11 +90,11 @@ jobs:
             fi
             . .venv/bin/activate
             python -m pip install --upgrade pip wheel
-            # installe seulement ce qui est nécessaire à l'API ; requirements.txt est au root du TARGET_DIR
-            pip install -r requirements.txt
+            pip install -r requirements.txt --no-cache-dir
             deactivate
 
       - name: ⚙️ Configure/restart systemd service (SSH)
+        if: github.event_name == 'push'
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -98,18 +105,20 @@ jobs:
             set -e
             TARGET_DIR="/var/www/api.ai-pneumonia-detector.dibodev.fr/html"
             SERVICE_NAME="pneumo-api.service"
-            # crée/écrase l'unité systemd (adapter User= si besoin)
-            sudo bash -c "cat > /etc/systemd/system/${SERVICE_NAME}" << 'EOF'
+            DEPLOY_USER="${{ secrets.SSH_USERNAME }}"
+            sudo bash -c "cat > /etc/systemd/system/${SERVICE_NAME}" <<EOF
             [Unit]
             Description=Pneumonia FastAPI (Uvicorn)
             After=network.target
 
             [Service]
-            User=${USER}
-            WorkingDirectory=/var/www/api.ai-pneumonia-detector.dibodev.fr/html
-            Environment=PYTHONPATH=/var/www/api.ai-pneumonia-detector.dibodev.fr/html
-            ExecStart=/var/www/api.ai-pneumonia-detector.dibodev.fr/html/.venv/bin/uvicorn api.main:app --host 127.0.0.1 --port 8001 --workers 2 --proxy-headers
+            User=${DEPLOY_USER}
+            WorkingDirectory=${TARGET_DIR}
+            Environment=PYTHONPATH=${TARGET_DIR}
+            ExecStart=${TARGET_DIR}/.venv/bin/uvicorn api.main:app --host 127.0.0.1 --port 8001 --workers 2 --proxy-headers
             Restart=always
+            RestartSec=5
+            KillSignal=SIGINT
 
             [Install]
             WantedBy=multi-user.target
@@ -129,10 +138,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
-            if ! sudo nginx -t; then
-              echo "Nginx configuration test failed"
-              exit 1
-            fi
+            sudo nginx -t
             sudo systemctl reload nginx
 
       - name: ✅ Health check
