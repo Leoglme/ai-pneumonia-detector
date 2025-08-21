@@ -38,7 +38,7 @@ export class PneumoniaApiService {
      * @throws Error when the network request fails or returns a non-2xx status code.
      * @returns {Promise<PredictionResponse>} The prediction response containing probabilities and class.
      */
-    static async predict(file: File, threshold: number = 0.5): Promise<PredictionResponse> {
+    static async predictWithKnn(file: File, threshold: number = 0.5): Promise<PredictionResponse> {
         const form: FormData = new FormData()
         form.append('file', file)
 
@@ -50,6 +50,24 @@ export class PneumoniaApiService {
             body: form
         })
 
+        return response
+    }
+    /**
+     * Calls the FastAPI CNN endpoint with a file payload and optional threshold.
+     * @param {File} file - The chest X-ray image file to classify.
+     * @param {number} threshold - Optional decision threshold in [0,1]. Default to 0.5.
+     * @throws Error when the network request fails or returns a non-2xx status code.
+     * @returns {Promise<PredictionResponse>} The prediction response containing probabilities and class.
+     */
+    static async predictWithCnn(file: File, threshold: number = 0.5): Promise<PredictionResponse> {
+        const form: FormData = new FormData()
+        form.append('file', file)
+        const url: string = `${this.getApiBaseUrl()}/api/cnn/predict?threshold=${encodeURIComponent(threshold)}`
+        // ofetch throws on HTTP errors; it returns typed data on success
+        const response: PredictionResponse = await ofetch<PredictionResponse>(url, {
+            method: 'POST',
+            body: form
+        })
         return response
     }
 }

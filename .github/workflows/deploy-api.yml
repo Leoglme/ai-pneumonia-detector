@@ -1,0 +1,141 @@
+name: 🚀 Deploy FastAPI (api/) to VPS
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'api/**'
+      - 'requirements.txt'
+      - '.github/workflows/deploy-api.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'api/**'
+      - 'requirements.txt'
+  workflow_dispatch:
+
+concurrency:
+  group: fastapi-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: 🏗️ Deploy API
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout (sparse)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          filter: 'blob:none'
+          sparse-checkout: |
+            api
+            requirements.txt
+          sparse-checkout-cone: true
+          lfs: false
+
+      - name: 🧱 Ensure target structure (SSH)
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            TARGET_DIR="/var/www/api.ai-pneumonia-detector.dibodev.fr/html"
+            sudo rm -rf "$TARGET_DIR/api"
+            sudo mkdir -p "$TARGET_DIR/api"
+            # venv dédié à l'API
+            sudo mkdir -p "$TARGET_DIR/.venv"
+            # droits (adapte si tu préfères www-data)
+            sudo chown -R $USER:$USER "$TARGET_DIR"
+
+      - name: 📤 Upload API sources (SCP)
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          strip_components: 0
+          source: |
+            api/**
+            requirements.txt
+          target: /var/www/api.ai-pneumonia-detector.dibodev.fr/html
+
+      - name: 🐍 Create/Update venv & install deps (SSH)
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            TARGET_DIR="/var/www/api.ai-pneumonia-detector.dibodev.fr/html"
+            cd "$TARGET_DIR"
+            sudo apt-get update -y
+            sudo apt-get install -y python3-venv
+            if [ ! -x ".venv/bin/python" ]; then
+              python3 -m venv .venv
+            fi
+            . .venv/bin/activate
+            python -m pip install --upgrade pip wheel
+            # installe seulement ce qui est nécessaire à l'API ; requirements.txt est au root du TARGET_DIR
+            pip install -r requirements.txt
+            deactivate
+
+      - name: ⚙️ Configure/restart systemd service (SSH)
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            TARGET_DIR="/var/www/api.ai-pneumonia-detector.dibodev.fr/html"
+            SERVICE_NAME="pneumo-api.service"
+            # crée/écrase l'unité systemd (adapter User= si besoin)
+            sudo bash -c "cat > /etc/systemd/system/${SERVICE_NAME}" << 'EOF'
+            [Unit]
+            Description=Pneumonia FastAPI (Uvicorn)
+            After=network.target
+
+            [Service]
+            User=${USER}
+            WorkingDirectory=/var/www/api.ai-pneumonia-detector.dibodev.fr/html
+            Environment=PYTHONPATH=/var/www/api.ai-pneumonia-detector.dibodev.fr/html
+            ExecStart=/var/www/api.ai-pneumonia-detector.dibodev.fr/html/.venv/bin/uvicorn api.main:app --host 127.0.0.1 --port 8001 --workers 2 --proxy-headers
+            Restart=always
+
+            [Install]
+            WantedBy=multi-user.target
+            EOF
+            sudo systemctl daemon-reload
+            sudo systemctl enable ${SERVICE_NAME}
+            sudo systemctl restart ${SERVICE_NAME}
+            sudo systemctl --no-pager --full status ${SERVICE_NAME} || true
+
+      - name: 🔄 Test & reload Nginx (SSH)
+        if: github.event_name == 'push'
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            if ! sudo nginx -t; then
+              echo "Nginx configuration test failed"
+              exit 1
+            fi
+            sudo systemctl reload nginx
+
+      - name: ✅ Health check
+        if: github.event_name == 'push'
+        run: |
+          curl -fsS https://api.ai-pneumonia-detector.dibodev.fr/api/health -m 10
