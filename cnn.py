@@ -1,16 +1,22 @@
 import os
+import sys
 import pandas as pd
 from utils.image_utils import ImageUtils
 import json
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, roc_auc_score, roc_curve
 import matplotlib.pyplot as plt
 import numpy as np
+from pathlib import Path
 
 # Disable oneDNN optimizations
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress TensorFlow warnings
 
 import tensorflow as tf
+
+# Add the project root directory to the Python path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from services.device_manager import DeviceManager
 
 
 class DataHandler:
@@ -182,6 +188,10 @@ class PneumoniaDetector:
 
 
 if __name__ == "__main__":
+    # Compare performance between CPU and GPU
+    device_manager = DeviceManager()
+    device_manager.use_best_device()
+
     data_directory = 'datasets'
     image_size = (256, 256)
     batch_size = 32
@@ -235,3 +245,21 @@ if __name__ == "__main__":
 
     # Plot Confusion Matrix
     detector.plot_confusion_matrix(cm)
+
+    # Save the model
+    Path("models/cnn").mkdir(parents=True, exist_ok=True)
+
+    detector.model.save("models/cnn/model.keras", include_optimizer=False)
+
+    # 3) Sauver des métadonnées utiles pour l'inférence
+    meta = {
+        "image_size": list(image_size),  # (256, 256)
+        "class_indices": data_handler.train_generator.class_indices,  # ex: {"NORMAL": 0, "PNEUMONIA": 1}
+        "threshold_default": 0.5,
+        "rescale": 1 / 255.0  # car ImageDataGenerator(rescale=1./255) à l'entraînement
+    }
+    with open("models/cnn/meta.json", "w", encoding="utf-8") as f:
+        json.dump(meta, f, ensure_ascii=False, indent=2)
+
+    print("✅ CNN saved to models/cnn/model.keras")
+    print("✅ Meta saved to models/cnn/meta.json")

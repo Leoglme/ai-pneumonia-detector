@@ -1,13 +1,13 @@
 name: deploy_ovh
 
 on:
-  push:
-    branches:
-      - develop
+#  push:
+#    branches:
+#      - develop
   workflow_dispatch:
 
 jobs:
-  deploy_cluster:
+  deploy_ovh:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

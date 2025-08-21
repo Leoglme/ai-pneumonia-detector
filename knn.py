@@ -8,6 +8,14 @@ import numpy as np
 from PIL import Image
 import json
 import matplotlib.pyplot as plt
+import joblib
+import os
+import sys
+
+
+# Add the project root directory to the Python path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from services.device_manager import DeviceManager
 
 
 class DataHandler:
@@ -121,6 +129,10 @@ class PneumoniaDetectorKNN:
 
 
 if __name__ == "__main__":
+    # Compare performance between CPU and GPU
+    device_manager = DeviceManager()
+    device_manager.use_best_device()
+
     data_directory = 'datasets'
     image_size = (64, 64)  # Smaller images for KNN
     num_neighbors = 5
@@ -170,3 +182,10 @@ if __name__ == "__main__":
 
     # Plot Confusion Matrix
     detector.plot_confusion_matrix(cm)
+
+    # Save the model and scaler
+    os.makedirs("models/knn", exist_ok=True)
+    os.makedirs("scalers/knn", exist_ok=True)
+
+    joblib.dump(detector.model, "models/knn/knn_model.joblib")
+    joblib.dump(detector.scaler, "scalers/knn/scaler.joblib")

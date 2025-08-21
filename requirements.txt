@@ -7,3 +7,9 @@ nbconvert
 nbformat
 matplotlib
 numpy
+joblib
+torch
+psutil
+GPUtil
+pydantic
+fastapi

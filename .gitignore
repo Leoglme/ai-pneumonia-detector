@@ -4,3 +4,11 @@
 knn_results.json
 cnn_results.json
 **/.DS_Store
+models/
+scalers/
+app/node_modules
+app/.nuxt
+app/.env
+app/.idea
+api/__pycache__/
+services/__pycache__/
