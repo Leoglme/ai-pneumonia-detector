@@ -20,7 +20,8 @@ jobs:
   build-and-deploy:
     name: 🏗️ Build & Deploy
     runs-on: ubuntu-latest
-
+    env:
+      API_BASE_URL: https://api.ai-pneumonia-detector.dibodev.fr
     defaults:
       run:
         working-directory: app
@@ -28,6 +29,13 @@ jobs:
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          filter: 'blob:none'
+          sparse-checkout: |
+            app
+          sparse-checkout-cone: false
+          lfs: false
 
       - name: ⚙️ Setup Node.js
         uses: actions/setup-node@v4
@@ -42,7 +50,7 @@ jobs:
       - name: 📝 Setup .env
         run: |
           if [ -f .env.example ]; then cp .env.example .env; fi
-          API_BASE_URL=https://api.ai-pneumonia-detector.dibodev.fr
+          echo "API_BASE_URL=$API_BASE_URL" >> .env
 
       - name: 🛠️ Generate Static Site (SSG)
         env:
@@ -68,5 +76,8 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            sudo nginx -t
+            if ! sudo nginx -t; then
+              echo "Nginx configuration test failed"
+              exit 1
+            fi
             sudo systemctl reload nginx
