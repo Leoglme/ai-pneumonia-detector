@@ -75,19 +75,6 @@ jobs:
             sudo mkdir -p "$TARGET_DIR/scalers/knn"
             sudo chown -R www-data:www-data "$TARGET_DIR"
             sudo chmod -R 755 "$TARGET_DIR"
-      - name: 🧪 Debug fichiers générés (local runner)
-        run: |
-          set -e
-          ls -lh
-          ls -lh models/knn/knn_model.joblib
-          ls -lh models/cnn/model.keras
-          ls -lh models/cnn/meta.json
-          ls -lh scalers/knn/scaler.joblib
-          du -h models/knn/knn_model.joblib models/cnn/model.keras || true
-
-      - name: Debug - List files in workspace
-        run: |
-          ls -R .
 
       - name: Fix file permissions
         run: |

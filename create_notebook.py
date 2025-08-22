@@ -404,5 +404,4 @@ Pour des applications nécessitant une haute précision et la capacité de trait
 """))
 
 # Enregistrement du notebook
-with open('ai_model_notebook.ipynb', 'w') as f:
-    nbf.write(n, f)
+nbf.write(n, "ai_model_notebook.ipynb")

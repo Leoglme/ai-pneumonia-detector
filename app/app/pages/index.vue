@@ -32,7 +32,7 @@
 
         <div class="flex items-center gap-3">
           <button
-              class="px-4 py-2 rounded-lg bg-gray-900 text-white disabled:opacity-50"
+              class="px-4 py-2 rounded-lg bg-gray-900 text-white disabled:opacity-50 cursor-pointer"
               :disabled="loading || imageSamplePending"
               @click="onPredict"
           >
@@ -53,24 +53,26 @@
         </div>
 
         <AlertBanner v-if="error" :message="error"/>
-        <ResultPanel v-if="cnnResult" :result="cnnResult" type="cnn"/>
-        <ResultPanel v-if="knnResult" :result="knnResult" type="knn"/>
       </div>
 
       <!-- Right column: Samples + notebook iframe-->
       <div class="space-y-4">
         <XraySampleGallery @pick="onPickSample"/>
-        <div class="rounded-xl border bg-white p-4">
-          <h3 class="text-lg font-semibold mb-3">Notebook (CNN vs KNN)</h3>
-          <div class="aspect-video w-full">
-            <iframe
-                :src="iframeSrc"
-                class="w-full h-full rounded-md border"
-                referrerpolicy="no-referrer"
-                sandbox="allow-scripts allow-same-origin"
-            />
-          </div>
-        </div>
+
+        <ResultPanel v-if="cnnResult" :result="cnnResult" type="cnn"/>
+        <ResultPanel v-if="knnResult" :result="knnResult" type="knn"/>
+      </div>
+    </div>
+
+    <div class="rounded-xl border bg-white p-4 h-full">
+      <h3 class="text-lg font-semibold mb-3">Notebook (CNN vs KNN)</h3>
+      <div class="w-full h-full">
+        <iframe
+            :src="iframeSrc"
+            class="w-full h-screen"
+            referrerpolicy="no-referrer"
+            sandbox="allow-scripts allow-same-origin"
+        />
       </div>
     </div>
   </div>
@@ -88,15 +90,11 @@ import type {PredictionResponse} from '~/core/types/prediction'
 import type {Ref, ComputedRef} from 'vue'
 
 // Default image File with /public/xray/pneumonia1.jpeg
-const defaultFile: File = new File(
-    [new Blob([new Uint8Array()])],
-    'pneumonia1.jpeg',
-    {type: 'image/jpeg'}
-)
-const selectedFile: Ref<File> = ref(defaultFile)
-const previewUrl: Ref<string> = ref('/xray/pneumonia1.jpeg')
+const DEFAULT_SAMPLE_URL = '/xray/pneumonia1.jpeg'
+const selectedFile: Ref<File | null> = ref(null)
+const previewUrl: Ref<string> = ref(DEFAULT_SAMPLE_URL)
 const loading: Ref<boolean> = ref(false)
-const imageSamplePending: Ref<boolean> = ref(false)
+const imageSamplePending: Ref<boolean> = ref(true)
 const error: Ref<string | null> = ref(null)
 const knnResult: Ref<PredictionResponse | null> = ref(null)
 const cnnResult: Ref<PredictionResponse | null> = ref(null)
@@ -171,4 +169,25 @@ async function onPredict() {
 }
 
 const iframeSrc: ComputedRef<string> = computed(() => PneumoniaApiService.getEvaluationIframeUrl())
+
+function revokeIfBlob(url: string) {
+  if (url?.startsWith('blob:')) URL.revokeObjectURL(url)
+}
+
+// Charger l’image par défaut comme un vrai File au montage
+onMounted(async () => {
+  try {
+    const file = await FileLoaderService.urlToFile(DEFAULT_SAMPLE_URL, 'pneumonia1.jpeg', 'image/jpeg')
+    const objUrl = URL.createObjectURL(file)
+    onFileSelected(file, objUrl)
+  } catch (e: any) {
+    error.value = e?.message ?? 'Impossible de charger l’image par défaut.'
+    // On garde l’aperçu en <img> avec l’URL publique, mais le bouton Analyser restera grisé si pas de file
+    selectedFile.value = null
+  } finally {
+    imageSamplePending.value = false
+  }
+})
+
+onBeforeUnmount(() => revokeIfBlob(previewUrl.value))
 </script>

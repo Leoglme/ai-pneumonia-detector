@@ -23,12 +23,12 @@ export class PneumoniaApiService {
     }
 
     /**
-     * Returns the iframe URL for the evaluation HTML page (CNN vs KNN).
-     * @example "http://localhost:8000/api/cnn_vs_knn_evaluation/index.html"
+     * Returns the iframe URL for the evaluation HTML page (CNN vs. KNN).
+     * @example "http://localhost:8000/notebook"
      * @returns {string} The URL of the evaluation iframe.
      */
     static getEvaluationIframeUrl(): string {
-        return `${this.getApiBaseUrl()}/api/cnn_vs_knn_evaluation/index.html`
+        return `${this.getApiBaseUrl()}/notebook`
     }
 
     /**

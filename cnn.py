@@ -195,10 +195,10 @@ if __name__ == "__main__":
     data_directory = 'datasets'
     image_size = (256, 256)
     batch_size = 32
-    num_epochs = 1  # 10
-    steps_per_epoch = 1  # 50
-    validation_steps = 1  # 50
-    test_steps = 1  # 50
+    num_epochs = 10  # 10
+    steps_per_epoch = 50  # 50
+    validation_steps = 50  # 50
+    test_steps = 50  # 50
 
     # Initialize data handlers
     data_handler = DataHandler(data_directory, image_size, batch_size)

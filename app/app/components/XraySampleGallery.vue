@@ -6,17 +6,16 @@
           v-for="s in samples"
           :key="s.url"
           type="button"
-          class="group overflow-hidden rounded-lg border hover:shadow"
+          class="group overflow-hidden rounded-lg border hover:shadow cursor-pointer"
           @click="emit('pick', s.url)"
           title="Utiliser cet exemple"
       >
         <img :src="s.url" alt="" class="aspect-square w-full object-cover" />
-        <span class="p-2 text-center text-xs bg-gray-50 group-hover:bg-gray-100">
+        <span class="p-2 text-center text-xs group-hover:bg-gray-100">
           {{ s.label }}
         </span>
       </button>
     </div>
-    <p class="mt-2 text-xs text-gray-500">Place tes images d’exemple dans <code>/public/xray</code>.</p>
   </div>
 </template>
 

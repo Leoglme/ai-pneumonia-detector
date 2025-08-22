@@ -2,6 +2,8 @@ import logging
 from fastapi import FastAPI, UploadFile, File, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from .schemas import PredictionResponse
+from pathlib import Path
+from fastapi.responses import FileResponse
 from .inference import KNNPneumoniaService, CNNSPneumoniaService
 
 app = FastAPI(title="Pneumonia KNN API", version="1.0.0")
@@ -99,4 +101,19 @@ async def predict_cnn(
     except Exception as e:
         logger.exception("CNN Prediction failure")
         raise HTTPException(status_code=500, detail=f"Prediction error: {e}")
+
+
+# Serve index.html
+@app.get("/notebook", include_in_schema=False)
+async def notebook():
+    """
+    Serve the index.html file for the notebook interface.
+    """
+    BASE_DIR = Path(__file__).resolve().parents[1]  # répertoire racine du projet
+    EVAL_HTML = BASE_DIR / "index.html"  # adapte si besoin
+    if not EVAL_HTML.exists():
+        raise HTTPException(404, "index.html introuvable")
+    return FileResponse(EVAL_HTML, media_type="text/html")
+
+
 
