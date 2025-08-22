@@ -98,9 +98,15 @@ jobs:
             # Debug requirements.txt
             ls -la requirements.txt || echo "requirements.txt missing"
             # Create or update virtual environment
-            if [ ! -x ".venv/bin/python" ]; then
+            if [ ! -d ".venv" ]; then
               python3 -m venv .venv
             fi
+            # Fix permissions for .venv
+            sudo chown -R $USER:$USER .venv
+            sudo find .venv -type d -exec chmod 775 {} \;
+            sudo find .venv -type f -exec chmod 664 {} \;
+            sudo find .venv/bin -type f -exec chmod 775 {} \;
+            # Activate virtual environment and install dependencies
             . .venv/bin/activate
             python -m pip install --upgrade pip wheel
             pip install -r requirements.txt --no-cache-dir
