@@ -13,3 +13,4 @@ psutil
 GPUtil
 pydantic
 fastapi
+uvicorn
