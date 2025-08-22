@@ -1,13 +1,10 @@
-name: deploy_ovh
+name: build-models-and-notebook
 
 on:
-#  push:
-#    branches:
-#      - develop
   workflow_dispatch:
 
 jobs:
-  deploy_ovh:
+  build-models-and-notebook:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -47,9 +44,39 @@ jobs:
           name: model-results-executed-notebook
           path: executed_notebook.ipynb
 
-
       - name: Upload HTML as artifact
         uses: actions/upload-artifact@v4
         with:
           name: model-results-html
           path: index.html
+
+      - name: 🧱 Ensure target structure on VPS (SSH)
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            TARGET_DIR="/var/www/api.ai-pneumonia-detector.dibodev.fr/html"
+            sudo mkdir -p "$TARGET_DIR/models/knn"
+            sudo mkdir -p "$TARGET_DIR/models/cnn"
+            sudo mkdir -p "$TARGET_DIR/scalers/knn"
+            sudo chown -R $USER:$USER "$TARGET_DIR"
+
+      - name: 📤 Upload HTML, models, and scalers to VPS (SCP)
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          strip_components: 0
+          source: |
+            index.html
+            models/knn/knn_model.joblib
+            models/cnn/model.keras
+            models/cnn/meta.json
+            scalers/knn/scaler.joblib
+          target: /var/www/api.ai-pneumonia-detector.dibodev.fr/html
