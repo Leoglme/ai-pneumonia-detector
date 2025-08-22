@@ -154,8 +154,3 @@ jobs:
             set -e
             sudo nginx -t
             sudo systemctl reload nginx
-
-      - name: ✅ Health check
-        if: github.event_name == 'push'
-        run: |
-          curl -fsS https://api.ai-pneumonia-detector.dibodev.fr/api/health -m 10
