@@ -103,3 +103,6 @@ jobs:
             models/cnn/meta.json
             scalers/knn/scaler.joblib
           target: /var/www/api.ai-pneumonia-detector.dibodev.fr/html
+          timeout: 60s
+          command_timeout: 20m
+          debug: true
