@@ -1,5 +1,47 @@
 # Changelog
 
+## [1.1.0](https://github.com/Leoglme/ai-pneumonia-detector/compare/v1.0.4...v1.1.0) (2025-08-22)
+
+
+### Features
+
+* add deploy ovh workflow ([ba1b357](https://github.com/Leoglme/ai-pneumonia-detector/commit/ba1b3577c510f351031d7833f6bb4d7aa2d29b0b))
+* add deploy ovh workflow ([e2217e7](https://github.com/Leoglme/ai-pneumonia-detector/commit/e2217e70849e3cadf2e3ab4715fc8b7304d1b5ec))
+* add executed and ai notebook ti ci artifact ([0bc5762](https://github.com/Leoglme/ai-pneumonia-detector/commit/0bc5762ceb00031a0d97cd88a9f4107f84c80f6a))
+* add more content for notebook ([f5c3cf6](https://github.com/Leoglme/ai-pneumonia-detector/commit/f5c3cf68b413571abf6cf293df34e9019618b214))
+* add more content for notebook ([1829d64](https://github.com/Leoglme/ai-pneumonia-detector/commit/1829d645df99c852c6962b74bb7309e45564b6c2))
+* add more content for notebook ([f249c36](https://github.com/Leoglme/ai-pneumonia-detector/commit/f249c36ebabec26d4da66dbb6cf9e44f7412f339))
+* add more content for notebook ([7b34d65](https://github.com/Leoglme/ai-pneumonia-detector/commit/7b34d65da97a7410090b5ac5bbd6c1158e0d2c6b))
+* add nupy ([4b5b37f](https://github.com/Leoglme/ai-pneumonia-detector/commit/4b5b37fb2e26ddf79170308698f0f78aa6b3b09f))
+* add nuxt 4 ([a8d8ed6](https://github.com/Leoglme/ai-pneumonia-detector/commit/a8d8ed6e209ff67e157686b182141b216e4e63c6))
+* add path for Upload Notebook as artifact ([0f96901](https://github.com/Leoglme/ai-pneumonia-detector/commit/0f969016bfe314736662af0fd4321cd333ad2b72))
+* add python-multipart to requirements.txt ([7e47fd3](https://github.com/Leoglme/ai-pneumonia-detector/commit/7e47fd3bb8388b7f217fb9ed7fe462cf6839a851))
+* add real data in number of epoch, etc ([e877ca4](https://github.com/Leoglme/ai-pneumonia-detector/commit/e877ca43528e33f857c89ba2a91ce1310253b899))
+* add true and false negative graph ([4e2debb](https://github.com/Leoglme/ai-pneumonia-detector/commit/4e2debb8ca04232985078f056c54b81d95341fae))
+* add upload models and notebook to vps in workflow job ([0a450cf](https://github.com/Leoglme/ai-pneumonia-detector/commit/0a450cf7582659bbecbd86e40ec70ac3df85505b))
+* add upload models and notebook to vps in workflow job ([f523ada](https://github.com/Leoglme/ai-pneumonia-detector/commit/f523ada455f80d69878702bc17bfb22c38dba8e8))
+* add upload models and notebook to vps in workflow job ([0f40afc](https://github.com/Leoglme/ai-pneumonia-detector/commit/0f40afce1259404981be6761f7c1a3469b7602db))
+* add upload models and notebook to vps in workflow job ([417430a](https://github.com/Leoglme/ai-pneumonia-detector/commit/417430ac7c9109aff7bec6f87bfe06517359cd3d))
+* add upload models and notebook to vps in workflow job ([dbec58d](https://github.com/Leoglme/ai-pneumonia-detector/commit/dbec58db63e9c35aa9f5b857f7eb25739ff69e2c))
+* add uvicorn to requirements.txt ([6799c87](https://github.com/Leoglme/ai-pneumonia-detector/commit/6799c8708f27d608b2ebad465e6b43baa6d9ef93))
+* add workflow to deploy fast api ([e8d8afd](https://github.com/Leoglme/ai-pneumonia-detector/commit/e8d8afd659c5f9d331ba72825be241b2dc6660f6))
+* add workflow to deploy fast api ([0a68915](https://github.com/Leoglme/ai-pneumonia-detector/commit/0a689154e93237d441c27772abee7265c48ebbd8))
+* add workflow to deploy fast api ([2cfcf13](https://github.com/Leoglme/ai-pneumonia-detector/commit/2cfcf1398ae59eb267c15684f328f3433db98b0f))
+* add workflow to deploy fast api ([5b7cb8d](https://github.com/Leoglme/ai-pneumonia-detector/commit/5b7cb8d35de72917eb36f9aa6ed599f41bd5423e))
+* rename knn files ([50b64c0](https://github.com/Leoglme/ai-pneumonia-detector/commit/50b64c0899519de0c077bc79147d29b2da292902))
+* update deploy nuxt 4 yml ([720d8b5](https://github.com/Leoglme/ai-pneumonia-detector/commit/720d8b52718e1c551091fc2f3339c03d204a998e))
+* update readme ([850e51e](https://github.com/Leoglme/ai-pneumonia-detector/commit/850e51e646d8c5b7df813dcbf516c3de16c1b737))
+* Upload Notebook as artifact ([043c487](https://github.com/Leoglme/ai-pneumonia-detector/commit/043c487141ca534c34c17b77524b7cf2c7bb8407))
+
+
+### Bug Fixes
+
+* fixed var ([6f129b5](https://github.com/Leoglme/ai-pneumonia-detector/commit/6f129b502b5305afab16f4d88f73bbd2632d37c8))
+* multiple minors bugs ([9959501](https://github.com/Leoglme/ai-pneumonia-detector/commit/99595016f49dace85640b2e5ec4052ee4f990571))
+* remove health check in deploy api workflow ([4993c4e](https://github.com/Leoglme/ai-pneumonia-detector/commit/4993c4e7f11569e942463f80394073c30b374bb2))
+* remove health check in deploy api workflow ([35a68cc](https://github.com/Leoglme/ai-pneumonia-detector/commit/35a68cc55f810025cdd57d68a2ee4c352859ab25))
+* remove health check in deploy api workflow ([5e30a0d](https://github.com/Leoglme/ai-pneumonia-detector/commit/5e30a0d73acca6c8caad27d74e95f9a15e53837b))
+
 ## [1.0.4](https://github.com/Leoglme/ai-pneumonia-detector/compare/v1.0.3...v1.0.4) (2024-07-01)
 
 
