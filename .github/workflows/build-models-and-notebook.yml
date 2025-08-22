@@ -60,18 +60,6 @@ jobs:
           name: model-results-html
           path: index.html
 
-      - name: 🧪 Debug generated files
-        run: |
-          echo "Listing files in workspace:"
-          ls -la
-          echo "Checking for expected files:"
-          ls -la index.html || { echo "index.html missing"; exit 1; }
-          ls -la models/knn/knn_model.joblib || { echo "knn_model.joblib missing"; exit 1; }
-          ls -la models/cnn/model.keras || { echo "model.keras missing"; exit 1; }
-          ls -la models/cnn/meta.json || { echo "meta.json missing"; exit 1; }
-          ls -la scalers/knn/scaler.joblib || { echo "scaler.joblib missing"; exit 1; }
-          echo "All required files are present"
-
       - name: 🧱 Ensure target structure on VPS (SSH)
         uses: appleboy/ssh-action@v0.1.6
         with:
@@ -88,21 +76,21 @@ jobs:
             sudo chown -R www-data:www-data "$TARGET_DIR"
             sudo chmod -R 755 "$TARGET_DIR"
 
-      - name: 📤 Upload HTML, models, and scalers to VPS (SCP)
-        uses: appleboy/scp-action@v0.1.4
+      - name: 📤 Upload HTML, models and scalers to VPS (SCP)
+        uses: appleboy/scp-action@v0.1.6
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          strip_components: 0
-          source: |
-            index.html
-            models/knn/knn_model.joblib
-            models/cnn/model.keras
-            models/cnn/meta.json
-            scalers/knn/scaler.joblib
           target: /var/www/api.ai-pneumonia-detector.dibodev.fr/html
-          timeout: 60s
-          command_timeout: 20m
-          debug: true
+          strip_components: 0
+          overwrite: true
+          timeout: 10m
+          command_timeout: 60m
+          source: |
+            ./index.html
+            ./models/knn/knn_model.joblib
+            ./models/cnn/model.keras
+            ./models/cnn/meta.json
+            ./scalers/knn/scaler.joblib
