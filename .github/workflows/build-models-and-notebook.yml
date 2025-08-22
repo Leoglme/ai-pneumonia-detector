@@ -75,22 +75,73 @@ jobs:
             sudo mkdir -p "$TARGET_DIR/scalers/knn"
             sudo chown -R www-data:www-data "$TARGET_DIR"
             sudo chmod -R 755 "$TARGET_DIR"
+      - name: 🧪 Debug fichiers générés (local runner)
+        run: |
+          set -e
+          ls -lh
+          ls -lh models/knn/knn_model.joblib
+          ls -lh models/cnn/model.keras
+          ls -lh models/cnn/meta.json
+          ls -lh scalers/knn/scaler.joblib
+          du -h models/knn/knn_model.joblib models/cnn/model.keras || true
 
-      - name: 📤 Upload HTML, models and scalers to VPS (SCP)
+      - name: Debug - List files in workspace
+        run: |
+          ls -R .
+
+      - name: Fix file permissions
+        run: |
+          chmod -R 755 models scalers index.html
+
+      - name: 📦 Pack bundle à déployer
+        run: |
+          set -e
+          BUNDLE="bundle_models_$(date +%s).tar"
+          echo "$BUNDLE" > bundle_name.txt
+          tar -cf "$BUNDLE" \
+            index.html \
+            models/knn/knn_model.joblib \
+            models/cnn/model.keras \
+            models/cnn/meta.json \
+            scalers/knn/scaler.joblib
+          ls -lh "$BUNDLE"
+
+      - name: 📤 Upload bundle vers VPS (SCP - un seul fichier)
         uses: appleboy/scp-action@v0.1.6
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          target: /var/www/api.ai-pneumonia-detector.dibodev.fr/html
+          target: /tmp
           strip_components: 0
           overwrite: true
           timeout: 10m
           command_timeout: 60m
           source: |
-            ./index.html
-            ./models/knn/knn_model.joblib
-            ./models/cnn/model.keras
-            ./models/cnn/meta.json
-            ./scalers/knn/scaler.joblib
+            ./*.tar
+
+      - name: 📦 Décompresser le bundle sur le VPS
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            TARGET_DIR="/var/www/api.ai-pneumonia-detector.dibodev.fr/html"
+            BUNDLE="$(ls -1t /tmp/bundle_models_*.tar | head -n 1)"
+            echo "Bundle détecté: $BUNDLE"
+            sudo mkdir -p "$TARGET_DIR/models/knn" "$TARGET_DIR/models/cnn" "$TARGET_DIR/scalers/knn"
+            # Décompression dans le dossier cible
+            sudo tar -xf "$BUNDLE" -C "$TARGET_DIR"
+            # Permissions (adapte l’utilisateur si besoin)
+            sudo chown -R www-data:www-data "$TARGET_DIR"
+            sudo chmod -R 755 "$TARGET_DIR"
+            # Vérifs
+            ls -lh "$TARGET_DIR/index.html"
+            ls -lh "$TARGET_DIR/models/knn/knn_model.joblib"
+            ls -lh "$TARGET_DIR/models/cnn/model.keras"
+            ls -lh "$TARGET_DIR/models/cnn/meta.json"
+            ls -lh "$TARGET_DIR/scalers/knn/scaler.joblib"
