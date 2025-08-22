@@ -16,19 +16,29 @@ jobs:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install jupyter nbconvert  # Assurer que Jupyter et nbconvert sont installés
 
       - name: Run KNN model script
-        run: python knn.py
+        run: |
+          set -e
+          python knn.py
 
       - name: Run CNN model script
-        run: python cnn.py
+        run: |
+          set -e
+          python cnn.py
 
       - name: Create Jupyter Notebook
-        run: python create_notebook.py
+        run: |
+          set -e
+          python create_notebook.py
 
       - name: Execute and Convert Notebook
         run: |
+          set -e
           jupyter nbconvert --to notebook --execute ai_model_notebook.ipynb --no-input --output executed_notebook.ipynb
           jupyter nbconvert --to html executed_notebook.ipynb --no-input --output index.html
 
@@ -50,6 +60,18 @@ jobs:
           name: model-results-html
           path: index.html
 
+      - name: 🧪 Debug generated files
+        run: |
+          echo "Listing files in workspace:"
+          ls -la
+          echo "Checking for expected files:"
+          ls -la index.html || { echo "index.html missing"; exit 1; }
+          ls -la models/knn/knn_model.joblib || { echo "knn_model.joblib missing"; exit 1; }
+          ls -la models/cnn/model.keras || { echo "model.keras missing"; exit 1; }
+          ls -la models/cnn/meta.json || { echo "meta.json missing"; exit 1; }
+          ls -la scalers/knn/scaler.joblib || { echo "scaler.joblib missing"; exit 1; }
+          echo "All required files are present"
+
       - name: 🧱 Ensure target structure on VPS (SSH)
         uses: appleboy/ssh-action@v0.1.6
         with:
@@ -63,7 +85,8 @@ jobs:
             sudo mkdir -p "$TARGET_DIR/models/knn"
             sudo mkdir -p "$TARGET_DIR/models/cnn"
             sudo mkdir -p "$TARGET_DIR/scalers/knn"
-            sudo chown -R $USER:$USER "$TARGET_DIR"
+            sudo chown -R www-data:www-data "$TARGET_DIR"
+            sudo chmod -R 755 "$TARGET_DIR"
 
       - name: 📤 Upload HTML, models, and scalers to VPS (SCP)
         uses: appleboy/scp-action@v0.1.4
