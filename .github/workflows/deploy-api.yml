@@ -5,13 +5,11 @@ on:
     branches: [ main ]
     paths:
       - 'api/**'
-      - 'requirements.txt'
       - '.github/workflows/deploy-api.yml'
   pull_request:
     branches: [ main ]
     paths:
       - 'api/**'
-      - 'requirements.txt'
   workflow_dispatch:
 
 concurrency:
@@ -30,7 +28,6 @@ jobs:
           fetch-depth: 1
           sparse-checkout: |
             api
-            requirements.txt
           sparse-checkout-cone: true
           lfs: false
 
@@ -41,7 +38,7 @@ jobs:
           ls -la api || true
           cat .git/info/sparse-checkout || true
           find api -type f || true
-          test -f requirements.txt && echo "requirements.txt exists" || echo "requirements.txt missing"
+          test -f api/requirements.txt && echo "api/requirements.txt exists" || echo "api/requirements.txt missing"
 
       - name: 🛠️ Create dummy file if api is empty
         run: |
@@ -72,7 +69,7 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           strip_components: 0
-          source: "api,requirements.txt"
+          source: "api"
           target: /var/www/api.ai-pneumonia-detector.dibodev.fr/html
 
       - name: 🐍 Create/Update venv & install deps (SSH)
@@ -82,6 +79,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 30m
           script: |
             set -e
             TARGET_DIR="/var/www/api.ai-pneumonia-detector.dibodev.fr/html"
@@ -95,22 +93,19 @@ jobs:
             # Update APT with error tolerance
             sudo apt-get update -y --allow-releaseinfo-change || true
             sudo apt-get install -y python3-venv
-            # Debug requirements.txt
-            ls -la requirements.txt || echo "requirements.txt missing"
-            # Create or update virtual environment
-            if [ ! -d ".venv" ]; then
+            # Debug requirements
+            ls -la api/requirements.txt || echo "api/requirements.txt missing"
+            # Rebuild the virtual environment only when the API dependency list changes, so no unused package stays behind
+            REQUIREMENTS_HASH="$(sha256sum api/requirements.txt | cut -d ' ' -f 1)"
+            if [ ! -x ".venv/bin/python" ] || [ "$(cat .venv/.requirements-hash 2>/dev/null)" != "$REQUIREMENTS_HASH" ]; then
+              sudo rm -rf .venv
               python3 -m venv .venv
+              . .venv/bin/activate
+              python -m pip install --upgrade pip wheel
+              pip install -r api/requirements.txt --no-cache-dir
+              deactivate
+              echo "$REQUIREMENTS_HASH" > .venv/.requirements-hash
             fi
-            # Fix permissions for .venv
-            sudo chown -R $USER:$USER .venv
-            sudo find .venv -type d -exec chmod 775 {} \;
-            sudo find .venv -type f -exec chmod 664 {} \;
-            sudo find .venv/bin -type f -exec chmod 775 {} \;
-            # Activate virtual environment and install dependencies
-            . .venv/bin/activate
-            python -m pip install --upgrade pip wheel
-            pip install -r requirements.txt --no-cache-dir
-            deactivate
 
       - name: ⚙️ Configure/restart systemd service (SSH)
         uses: appleboy/ssh-action@v0.1.6
@@ -124,6 +119,9 @@ jobs:
             TARGET_DIR="/var/www/api.ai-pneumonia-detector.dibodev.fr/html"
             SERVICE_NAME="pneumo-api.service"
             DEPLOY_USER="${{ secrets.SSH_USERNAME }}"
+            # One worker: each worker loads both models (about 1.7 GB at startup), two of them do not fit in the VPS memory
+            # ExecStartPre: Keras extracts the weights into models/cnn/tmp* while loading and leaves the folder behind when the process is killed
+            # RestartSec and OOMScoreAdjust: when memory runs out, this demo is stopped first and retried every 5 minutes instead of every 5 seconds
             sudo bash -c "cat > /etc/systemd/system/${SERVICE_NAME}" <<EOF
             [Unit]
             Description=Pneumonia FastAPI (Uvicorn)
@@ -132,9 +130,11 @@ jobs:
             User=${DEPLOY_USER}
             WorkingDirectory=${TARGET_DIR}
             Environment=PYTHONPATH=${TARGET_DIR}
-            ExecStart=${TARGET_DIR}/.venv/bin/uvicorn api.main:app --host 127.0.0.1 --port 8001 --workers 2 --proxy-headers
+            ExecStartPre=-+/usr/bin/find ${TARGET_DIR}/models/cnn -maxdepth 1 -type d -name 'tmp*' -exec rm -rf {} +
+            ExecStart=${TARGET_DIR}/.venv/bin/uvicorn api.main:app --host 127.0.0.1 --port 8001 --workers 1 --proxy-headers
             Restart=always
-            RestartSec=5
+            RestartSec=300
+            OOMScoreAdjust=500
             KillSignal=SIGINT
             [Install]
             WantedBy=multi-user.target
